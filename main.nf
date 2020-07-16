@@ -21,16 +21,49 @@ def helpMessage() {
     nextflow run nf-core/archaeodiet --reads '*_R{1,2}.fastq.gz' -profile docker
 
     Mandatory arguments:
-      --reads [file]                Path to input data (must be surrounded with quotes)
+      --input [file]                Path to preprocessed FASTQ files (must be surrounded with quotes)
       -profile [str]                Configuration profile to use. Can use multiple (comma separated)
                                     Available: conda, docker, singularity, test, awsbatch, <institute> and more
 
-    Options:
-      --genome [str]                  Name of iGenomes reference
-      --single_end [bool]             Specifies that the input is single-end reads
-
     References                        If not specified in the configuration file or you wish to overwrite any of the references
-      --fasta [file]                  Path to fasta reference
+      --target_database [file/dir]          Path to target metagenomic screening reference (e.g. eukaryotic dietary species)
+      --contaminant_database [file/dir]     Path to contaminants to screen against (e.g. microbial database)
+      --local_taxonomy_db                   [Not Currently Used] Path to local copy of NCBI taxonomy.dmp
+
+    Target Screening
+      --target_tool                           Specify which classifier to use. Options: 'malt'. Default: '${params.contamination_chrom_name}'
+      --target_min_support_reads              Specify a minimum number of reads  a taxon of sample total is required to have to be retained. Not compatible with . Default: ${params.target_min_support_reads}
+      --target_percent_identity               Percent identity value threshold for MALT. Default: ${params.percent_identity}
+      --target_malt_mode                      Specify which alignment method to use for MALT. Options: 'Unknown', 'BlastN', 'BlastP', 'BlastX', 'Classifier'. Default: '${params.malt_mode}'
+      --target_malt_alignment_mode            Specify alignment method for MALT. Options: 'Local', 'SemiGlobal'. Default: '${params.malt_alignment_mode}'
+      --target_malt_top_percent               Specify the percent for LCA algorithm for MALT (see MEGAN6 CE manual). Default: ${params.malt_top_percent}
+      --target_malt_min_support_mode          Specify whether to use percent or raw number of reads for minimum support required for taxon to be retained for MALT. Options: 'percent', 'reads'. Default: '${params.malt_min_support_mode}'
+      --target_malt_min_support_percent       Specify the minimum percentage of reads a taxon of sample total is required to have to be retained for MALT. Default: Default: ${params.malt_min_support_percent}
+      --target_malt_max_queries               Specify the maximium number of queries a read can have for MALT. Default: ${params.malt_max_queries}
+      --target_malt_memory_mode               Specify the memory load method. Do not use 'map' with GTFS file system for MALT. Options: 'load', 'page', 'map'. Default: '${params.malt_memory_mode}'
+      --target_malt_weighted_lca              Specify whether to use MALT's 'weighted' LCA algorithm
+      --target_malt_weighted_lca_perc         Specify the weighted-LCA percentage of weight to cover. Default: ${params.target_malt_weighted_lca_perc}
+
+    Contaminant Screening
+      --contaminant_tool                           Specify which classifier to use. Options: 'malt', 'kraken'. Default: '${params.contamination_chrom_name}'
+      --contaminant_min_support_reads              Specify a minimum number of reads  a taxon of sample total is required to have to be retained. Not compatible with . Default: ${params.contaminant_min_support_reads}
+      --contaminant_percent_identity               Percent identity value threshold for MALT. Default: ${params.percent_identity}
+      --contaminant_malt_mode                      Specify which alignment method to use for MALT. Options: 'Unknown', 'BlastN', 'BlastP', 'BlastX', 'Classifier'. Default: '${params.malt_mode}'
+      --contaminant_malt_alignment_mode            Specify alignment method for MALT. Options: 'Local', 'SemiGlobal'. Default: '${params.malt_alignment_mode}'
+      --contaminant_malt_top_percent               Specify the percent for LCA algorithm for MALT (see MEGAN6 CE manual). Default: ${params.malt_top_percent}
+      --contaminant_malt_min_support_mode          Specify whether to use percent or raw number of reads for minimum support required for taxon to be retained for MALT. Options: 'percent', 'reads'. Default: '${params.malt_min_support_mode}'
+      --contaminant_malt_min_support_percent       Specify the minimum percentage of reads a taxon of sample total is required to have to be retained for MALT. Default: Default: ${params.malt_min_support_percent}
+      --contaminant_malt_max_queries               Specify the maximium number of queries a read can have for MALT. Default: ${params.malt_max_queries}
+      --contaminant_malt_memory_mode               Specify the memory load method. Do not use 'map' with GTFS file system for MALT. Options: 'load', 'page', 'map'. Default: '${params.malt_memory_mode}'
+      --contaminant_malt_weighted_lca              Specify whether to use MALT's 'weighted' LCA algorihthm
+      --contaminant_malt_weighted_lca_per          Specify the weighted-LCA percentage of weight to cover. Default: ${params.contaminant_malt_weighted_lca_perc}
+
+
+    Damage Profiling
+      --damageprofiler_length       Specify length filter for DamageProfiler. Default: ${params.damageprofiler_length}
+      --damageprofiler_threshold    Specify number of bases to consider for damageProfiler (e.g. on damage plot). Default: ${params.damageprofiler_threshold}
+      --damageprofiler_yaxis        Specify the maximum misincorporation frequency that should be displayed on damage plot. Set to 0 to 'autoscale'. Default: ${params.damageprofiler_yaxis} 
+  
 
     Other options:
       --outdir [file]                 The output directory where the results will be saved
@@ -57,21 +90,71 @@ if (params.help) {
  * SET UP CONFIGURATION VARIABLES
  */
 
-// Check if genome exists in the config file
-if (params.genomes && params.genome && !params.genomes.containsKey(params.genome)) {
-    exit 1, "The provided genome '${params.genome}' is not available in the iGenomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
+if (params.target_database == '' ) {
+    exit 1, "[nf-core/archaeodiet] error: target database alignment requires a path to a database directory. Please specify one with --target_database '/path/to/database/'."
 }
 
-// TODO nf-core: Add any reference files that are needed
-// Configurable reference genomes
-//
-// NOTE - THIS IS NOT USED IN THIS PIPELINE, EXAMPLE ONLY
-// If you want to use the channel below in a process, define the following:
-//   input:
-//   file fasta from ch_fasta
-//
-params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
-if (params.fasta) { ch_fasta = file(params.fasta, checkIfExists: true) }
+if (params.contaminant_database == '' ) {
+    exit 1, "[nf-core/archaeodiet] error: contaminant database alignment requires a path to a database directory. Please specify one with --contaminant_database '/path/to/database/'."
+}
+
+// Input validation
+  if (params.target_tool != 'malt') {
+    exit 1, "[nf-core/archaeodiet] error: metagenomic classification against target database can currently only be run with 'malt'. Please check your classifer. You gave: --target_tool '${params.target_tool}'."
+  }
+
+  if (params.target_tool == 'malt' && params.target_malt_mode != 'BlastN' && params.target_malt_mode != 'BlastP' && params.target_malt_mode != 'BlastX') {
+    exit 1, "[nf-core/archaeodiet] error: unknown MALT mode specified. Options: 'BlastN', 'BlastP', 'BlastX'. You gave: --target_malt_mode '${params.target_malt_mode}'."
+  }
+
+  if (params.target_tool == 'malt' && params.target_malt_alignment_mode != 'Local' && params.target_malt_alignment_mode != 'SemiGlobal') {
+    exit 1, "[nf-core/archaeodiet] error: unknown MALT alignment mode specified. Options: 'Local', 'SemiGlobal'. You gave: --target_malt_alignment_mode '${params.target_malt_alignment_mode}'."
+  }
+
+  if (params.target_tool == 'malt' && params.target_malt_min_support_mode == 'percent' && params.target_min_support_reads != 1) {
+    exit 1, "[nf-core/archaeodiet] error: incompatible MALT min support configuration. Percent can only be used with --target_malt_min_support_percent. You modified --target_min_support_reads."
+  }
+
+  if (params.target_tool == 'malt' && params.target_malt_min_support_mode == 'reads' && params.target_malt_min_support_percent != 0.01) {
+    exit 1, "[nf-core/archaeodiet] error: incompatible MALT min support configuration. Reads can only be used with --target_target_malt_min_supportreads. You modified --target_malt_min_support_percent."
+  }
+
+  if (params.target_tool == 'malt' && params.target_malt_memory_mode != 'load' && params.target_malt_memory_mode != 'page' && params.target_malt_memory_mode != 'map') {
+    exit 1, "[nf-core/archaeodiet] error: unknown MALT memory mode specified. Options: 'load', 'page', 'map'. You gave: --target_malt_memory_mode '${params.target_malt_memory_mode}'."
+  }
+
+  if (!params.target_min_support_reads.toString().isInteger()){
+    exit 1, "[nf-core/archaeodiet] error: incompatible min_support_reads configuration. min_support_reads can only be used with integers. --target_min_support_reads You gave: ${params.target_min_support_reads}."
+  }
+
+    if (params.contaminant_tool != 'malt') {
+    exit 1, "[nf-core/archaeodiet] error: metagenomic classification against contaminant database can currently only be run with 'malt'. Please check your classifer. You gave: --target_tool '${params.target_tool}'."
+  }
+
+  if (params.contaminant_tool == 'malt' && params.contaminant_malt_mode != 'BlastN' && params.contaminant_malt_mode != 'BlastP' && params.contaminant_malt_mode != 'BlastX') {
+    exit 1, "[nf-core/archaeodiet] error: unknown MALT mode specified. Options: 'BlastN', 'BlastP', 'BlastX'. You gave: --contaminant_malt_mode '${params.contaminant_malt_mode}'."
+  }
+
+  if (params.contaminant_tool == 'malt' && params.contaminant_malt_alignment_mode != 'Local' && params.contaminant_malt_alignment_mode != 'SemiGlobal') {
+    exit 1, "[nf-core/archaeodiet] error: unknown MALT alignment mode specified. Options: 'Local', 'SemiGlobal'. You gave: --contaminant_malt_alignment_mode '${params.contaminant_malt_alignment_mode}'."
+  }
+
+  if (params.contaminant_tool == 'malt' && params.contaminant_malt_min_support_mode == 'percent' && params.contaminant_min_support_reads != 1) {
+    exit 1, "[nf-core/archaeodiet] error: incompatible MALT min support configuration. Percent can only be used with --contaminant_malt_min_support_percent. You modified --contaminant_min_support_reads."
+  }
+
+  if (params.contaminant_tool == 'malt' && params.contaminant_malt_min_support_mode == 'reads' && params.contaminant_malt_min_support_percent != 0.01) {
+    exit 1, "[nf-core/archaeodiet] error: incompatible MALT min support configuration. Reads can only be used with --contaminant_contaminant_malt_min_supportreads. You modified --contaminant_malt_min_support_percent."
+  }
+
+  if (params.contaminant_tool == 'malt' && params.contaminant_malt_memory_mode != 'load' && params.contaminant_malt_memory_mode != 'page' && params.contaminant_malt_memory_mode != 'map') {
+    exit 1, "[nf-core/archaeodiet] error: unknown MALT memory mode specified. Options: 'load', 'page', 'map'. You gave: --contaminant_malt_memory_mode '${params.contaminant_malt_memory_mode}'."
+  }
+
+  if (!params.contaminant_min_support_reads.toString().isInteger()){
+    exit 1, "[nf-core/archaeodiet] error: incompatible min_support_reads configuration. min_support_reads can only be used with integers. --target_min_support_reads You gave: ${params.target_min_support_reads}."
+  }
+
 
 // Has the run name been specified by the user?
 // this has the bonus effect of catching both -name and --name
@@ -97,27 +180,31 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
 
 /*
- * Create a channel for input read files
+ * Input Loading
  */
-if (params.readPaths) {
-    if (params.single_end) {
-        Channel
-            .from(params.readPaths)
-            .map { row -> [ row[0], [ file(row[1][0], checkIfExists: true) ] ] }
-            .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { ch_read_files_fastqc; ch_read_files_trimming }
-    } else {
-        Channel
-            .from(params.readPaths)
-            .map { row -> [ row[0], [ file(row[1][0], checkIfExists: true), file(row[1][1], checkIfExists: true) ] ] }
-            .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { ch_read_files_fastqc; ch_read_files_trimming }
-    }
-} else {
+
+ // TODO Fix shitty splitting at '.'
+if (params.input) {
     Channel
-        .fromFilePairs(params.reads, size: params.single_end ? 1 : 2)
-        .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --single_end on the command line." }
-        .into { ch_read_files_fastqc; ch_read_files_trimming }
+        .fromPath(params.input, checkIfExists: true)
+        .ifEmpty { exit 1, "[nf-core/archaeodiet] Cannot find any reads matching: ${params.input}\nNB: Path needs to be enclosed in quotes!" }
+        .set { ch_input_for_targetalignment }
+} else {
+    exit 1, "[nf-core/archaeodiet] input was not supplied. PLease check input parameters"
+}
+
+if ( params.target_database ) {
+ch_database_for_targetalignment = Channel
+    .fromPath(params.target_database, checkIfExists: true, type: 'dir')
+} else {
+    exit 1, "[nf-core/archaeodiet] target database was not supplied. Please check input parameters."
+}
+
+if ( params.contaminant_database ) {
+ch_database_for_contaminantalignment = Channel
+    .fromPath(params.contaminant_database, checkIfExists: true, type: 'dir')
+} else {
+    exit 1, "[nf-core/archaeodiet] contaminant database was not supplied. Please check input parameters."
 }
 
 // Header log info
@@ -126,9 +213,9 @@ def summary = [:]
 if (workflow.revision) summary['Pipeline Release'] = workflow.revision
 summary['Run Name']         = custom_runName ?: workflow.runName
 // TODO nf-core: Report custom parameters here
-summary['Reads']            = params.reads
-summary['Fasta Ref']        = params.fasta
-summary['Data Type']        = params.single_end ? 'Single-End' : 'Paired-End'
+summary['Input']            = params.input
+summary['Target DB']        = params.target_database
+summary['Contaminant DB']   = params.contaminant_database
 summary['Max Resources']    = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
 if (workflow.containerEngine) summary['Container'] = "$workflow.containerEngine - $workflow.container"
 summary['Output dir']       = params.outdir
@@ -175,6 +262,7 @@ Channel.from(summary.collect{ [it.key, it.value] })
 /*
  * Parse software version numbers
  */
+
 process get_software_versions {
     publishDir "${params.outdir}/pipeline_info", mode: params.publish_dir_mode,
         saveAs: { filename ->
@@ -189,35 +277,147 @@ process get_software_versions {
     script:
     // TODO nf-core: Get all tools to print their version number here
     """
-    echo $workflow.manifest.version > v_pipeline.txt
-    echo $workflow.nextflow.version > v_nextflow.txt
-    fastqc --version > v_fastqc.txt
+    echo "${workflow.manifest.version}" > v_pipeline.txt
+    echo "${workflow.nextflow.version}" > v_nextflow.txt
+
+    malt-run --help |& tail -n 3 | head -n 1 | cut -f 2 -d'(' | cut -f 1 -d ',' &> v_malt.txt 2>&1 || true
+    samtools --version &> v_samtools.txt 2>&1 || true   
+    damageprofiler --version &> v_damageprofiler.txt 2>&1 || true
+    ## TODO missing eutils
+    
     multiqc --version > v_multiqc.txt
     scrape_software_versions.py &> software_versions_mqc.yaml
     """
 }
 
 /*
- * STEP 1 - FastQC
+ * STEP 1- Target DB Screening
  */
-process fastqc {
-    tag "$name"
-    label 'process_medium'
-    publishDir "${params.outdir}/fastqc", mode: params.publish_dir_mode,
-        saveAs: { filename ->
-                      filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"
-                }
 
-    input:
-    set val(name), file(reads) from ch_read_files_fastqc
+ process target_alignment_malt {
+  label 'mc_small'
+  publishDir "${params.outdir}/target_alignment", 
+    mode: params.publish_dir_mode, 
+    pattern: '*.log'
 
-    output:
-    file "*_fastqc.{zip,html}" into ch_fastqc_results
+  when:
+  params.target_tool == 'malt'
 
-    script:
-    """
-    fastqc --quiet --threads $task.cpus $reads
-    """
+  input:
+  path(fastqs) from ch_input_for_targetalignment.collect()
+  path db from ch_database_for_targetalignment
+
+  output:
+  path "*.sam.gz" into ch_sam_for_targetsamtobam mode flatten
+  path "target_malt.log" into ch_targetmalt_for_multiqc
+
+  script:
+  if ( "${params.target_malt_min_support_mode}" == "percent" ) {
+    min_supp = "-supp ${params.target_malt_min_support_percent}" 
+  } else if ( "${params.target_malt_min_support_mode}" == "reads" ) {
+    min_supp = "-sup ${params.target_min_support_reads}"
+  }
+  wlca = params.target_malt_weighted_lca ? "-wLCA -wLCAP ${params.target_malt_weighted_lca_perc}" : ""
+  """
+  malt-run \
+  -J-Xmx${task.memory.toGiga()}g \
+  -t ${task.cpus} \
+  -v \
+  -o . \
+  --alignments ./ \
+  -d ${db} \
+  -id ${params.target_percent_identity} \
+  -m ${params.target_malt_mode} \
+  -at ${params.target_malt_alignment_mode} \
+  -top ${params.target_malt_top_percent} \
+  ${min_supp} \
+  -mq ${params.target_malt_max_queries} \
+  --memoryMode ${params.target_malt_memory_mode} \
+  ${wlca} -i ${fastqs.join(' ')} |&tee target_malt.log
+
+  rm *.rma6
+  """
+}
+
+ process target_fileconversion {
+  label 'mc_small'
+  tag "${sam}"
+  publishDir "${params.outdir}/target_alignment", mode:"copy"
+
+  input:
+  path(sam) from ch_sam_for_targetsamtobam
+
+  output:
+  path "*bam" into ch_bam_for_contaminationalignment
+  path "*.fastq.gz" into ch_fastq_for_contaminantalignment
+
+  script:
+  """
+  zcat $sam | samtools view -@ ${task.cpus} -b > ${sam}_putativehits.bam
+  samtools fastq -@ ${task.cpus} ${sam}_putativehits.bam | pigz -p ${task.cpus} > ${sam}_putativehits.fastq.gz
+  """
+}
+
+ process contaminant_alignment_malt {
+  label 'mc_small'
+  publishDir "${params.outdir}/contaminant_alignment", 
+    mode: params.publish_dir_mode, 
+    pattern: '*.log'
+
+  when:
+  params.target_tool == 'malt'
+
+  input:
+  path(fastqs) from ch_fastq_for_contaminantalignment.collect()
+  path db from ch_database_for_contaminantalignment
+
+  output:
+  path "*.sam.gz" into ch_sam_for_contaminantsamtobam mode flatten
+  path "contaminant_malt.log" into ch_contaminantmalt_for_multiqc
+
+  script:
+  if ( "${params.contaminant_malt_min_support_mode}" == "percent" ) {
+    min_supp = "-supp ${params.contaminant_malt_min_support_percent}" 
+  } else if ( "${params.contaminant_malt_min_support_mode}" == "reads" ) {
+    min_supp = "-sup ${params.contaminant_min_support_reads}"
+  }
+  wlca = params.contaminant_malt_weighted_lca ? "-wLCA -wLCAP ${params.contaminant_malt_weighted_lca_perc}" : ""
+  """
+  malt-run \
+  -J-Xmx${task.memory.toGiga()}g \
+  -t ${task.cpus} \
+  -v \
+  -o . \
+  --alignments ./ \
+  -d ${db} \
+  -id ${params.contaminant_percent_identity} \
+  -m ${params.contaminant_malt_mode} \
+  -at ${params.contaminant_malt_alignment_mode} \
+  -top ${params.contaminant_malt_top_percent} \
+  ${min_supp} \
+  -mq ${params.contaminant_malt_max_queries} \
+  --memoryMode ${params.contaminant_malt_memory_mode} \
+  ${wlca} -i ${fastqs.join(' ')} |&tee contaminant_malt.log
+
+  rm *.rma6
+  """
+}
+
+ process contaminant_fileconversion {
+  label 'mc_small'
+  tag "${sam}"
+  publishDir "${params.outdir}/contaminant_alignment", mode:"copy"
+
+  input:
+  path(sam) from ch_sam_for_contaminantsamtobam
+
+  output:
+  path "*bam" into ch_bam_for_contaminanttaxaid
+
+  script:
+  """
+  zcat $sam | samtools view -@ ${task.cpus} -b > ${sam}_putativehits.bam
+  """
 }
 
 /*
@@ -230,9 +430,10 @@ process multiqc {
     file (multiqc_config) from ch_multiqc_config
     file (mqc_custom_config) from ch_multiqc_custom_config.collect().ifEmpty([])
     // TODO nf-core: Add in log files from your new processes for MultiQC to find!
-    file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
     file ('software_versions/*') from ch_software_versions_yaml.collect()
     file workflow_summary from ch_workflow_summary.collectFile(name: "workflow_summary_mqc.yaml")
+    file ('target_alignment/*') from ch_targetmalt_for_multiqc.collect().ifEmpty([])
+    file ('contaminant_alignment/*') from ch_contaminantmalt_for_multiqc.collect().ifEmpty([])
 
     output:
     file "*multiqc_report.html" into ch_multiqc_report
@@ -245,7 +446,7 @@ process multiqc {
     custom_config_file = params.multiqc_config ? "--config $mqc_custom_config" : ''
     // TODO nf-core: Specify which MultiQC modules to use with -m for a faster run time
     """
-    multiqc -f $rtitle $rfilename $custom_config_file .
+    multiqc -f $rtitle $rfilename $custom_config_file . -s ## add s as test TODO to remove and fix properly
     """
 }
 

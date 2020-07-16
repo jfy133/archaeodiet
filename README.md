@@ -11,7 +11,7 @@
 
 ## Introduction
 
-The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. It comes with docker containers making installation trivial and results highly reproducible.
+The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. It comes with docker containers making installation trivial and results highly reproducible. nf-core/archaeodiet performs identification and authentication of putative 'dietary' taxa based on DNA from archaeological metagenomic samples.
 
 ## Quick Start
 
@@ -32,7 +32,7 @@ iv. Start running your own analysis!
 <!-- TODO nf-core: Update the default command above used to run the pipeline -->
 
 ```bash
-nextflow run nf-core/archaeodiet -profile <docker/singularity/conda/institute> --reads '*_R{1,2}.fastq.gz' --genome GRCh37
+nextflow run nf-core/archaeodiet -profile <docker/singularity/conda/institute> --input '*.fastq.gz'
 ```
 
 See [usage docs](docs/usage.md) for all of the available options when running the pipeline.

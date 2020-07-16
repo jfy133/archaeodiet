@@ -21,8 +21,8 @@ jobs:
           sudo mv nextflow /usr/local/bin/
       - name: Pull docker image
         run: |
-          docker pull nfcore/archaeodiet:dev
-          docker tag nfcore/archaeodiet:dev nfcore/archaeodiet:dev
+          docker pull jfy133/archaeodiet:dev
+          docker tag jfy133/archaeodiet:dev jfy133/archaeodiet:dev
       - name: Run pipeline with test data
         run: |
           # TODO nf-core: You can customise CI pipeline run tests as required
