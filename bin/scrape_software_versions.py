@@ -10,6 +10,7 @@ regexes = {
     'Samtools': ['v_samtools.txt', r"samtools (\S+)"],
     'DamageProfiler' : ['v_damageprofiler.txt', r"DamageProfiler v(\S+)"],
     'malt':['v_malt.txt',r"version (\S+)"],
+    'Picard FilterSamReads': ['v_filtersamreads.txt', r"(\S+)"],
     'MultiQC': ['v_multiqc.txt', r"multiqc, version (\S+)"],
 }
 results = OrderedDict()

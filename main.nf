@@ -280,9 +280,16 @@ process get_software_versions {
     echo "${workflow.manifest.version}" > v_pipeline.txt
     echo "${workflow.nextflow.version}" > v_nextflow.txt
 
-    malt-run --help |& tail -n 3 | head -n 1 | cut -f 2 -d'(' | cut -f 1 -d ',' &> v_malt.txt 2>&1 || true
+    malt-run --help \
+    |& tail -n 3 \
+    | head -n 1 \
+    | cut -f 2 -d'(' \
+    | cut -f 1 -d ',' &> v_malt.txt 2>&1 || true
+    
     samtools --version &> v_samtools.txt 2>&1 || true   
     damageprofiler --version &> v_damageprofiler.txt 2>&1 || true
+    picard FilterSamReads --version &> v_filtersamreads.txt || true
+
     ## TODO missing eutils
     
     multiqc --version > v_multiqc.txt
@@ -317,7 +324,12 @@ process get_software_versions {
   } else if ( "${params.target_malt_min_support_mode}" == "reads" ) {
     min_supp = "-sup ${params.target_min_support_reads}"
   }
-  wlca = params.target_malt_weighted_lca ? "-wLCA -wLCAP ${params.target_malt_weighted_lca_perc}" : ""
+    
+  if ( params.target_malt_weighted_lca ) {
+    wlca = "-wLCA -wLCAP ${params.target_malt_weighted_lca_perc}"
+  } else {
+    wlca = ""
+  } 
   """
   malt-run \
   -J-Xmx${task.memory.toGiga()}g \
@@ -348,18 +360,22 @@ process get_software_versions {
   path(sam) from ch_sam_for_targetsamtobam
 
   output:
-  path "*bam" into ch_bam_for_contaminationalignment
+  path "*bam" into ch_bam_for_contaminationalignment, ch_bam_for_contaminantremoval
   path "*.fastq.gz" into ch_fastq_for_contaminantalignment
 
   script:
   """
-  zcat $sam | samtools view -@ ${task.cpus} -b > ${sam}_putativehits.bam
-  samtools fastq -@ ${task.cpus} ${sam}_putativehits.bam | pigz -p ${task.cpus} > ${sam}_putativehits.fastq.gz
+  zcat $sam | samtools view -@ ${task.cpus} -b -o ${sam}_putativehits.bam
+  samtools fastq \
+  -@ ${task.cpus} \
+  ${sam}_putativehits.bam \
+  | pigz -p ${task.cpus} > ${sam}_putativehits.fastq.gz
   """
 }
 
  process contaminant_alignment_malt {
   label 'mc_small'
+
   publishDir "${params.outdir}/contaminant_alignment", 
     mode: params.publish_dir_mode, 
     pattern: '*.log'
@@ -381,7 +397,11 @@ process get_software_versions {
   } else if ( "${params.contaminant_malt_min_support_mode}" == "reads" ) {
     min_supp = "-sup ${params.contaminant_min_support_reads}"
   }
-  wlca = params.contaminant_malt_weighted_lca ? "-wLCA -wLCAP ${params.contaminant_malt_weighted_lca_perc}" : ""
+  if ( params.contaminant_malt_weighted_lca ) {
+    wlca = "-wLCA -wLCAP ${params.contaminant_malt_weighted_lca_perc}"
+  } else {
+    wlca = ""
+  }
   """
   malt-run \
   -J-Xmx${task.memory.toGiga()}g \
@@ -405,18 +425,102 @@ process get_software_versions {
 
  process contaminant_fileconversion {
   label 'mc_small'
-  tag "${sam}"
-  publishDir "${params.outdir}/contaminant_alignment", mode:"copy"
+  tag "${sam}"  
 
+  publishDir "${params.outdir}/contaminant_alignment", 
+    mode: params.publish_dir_mode, 
+    pattern: '*.bam'
+  
   input:
   path(sam) from ch_sam_for_contaminantsamtobam
 
   output:
-  path "*bam" into ch_bam_for_contaminanttaxaid
+  path "*bam" into ch_bam_for_contaminantreadextraction
 
   script:
   """
-  zcat $sam | samtools view -@ ${task.cpus} -b > ${sam}_putativehits.bam
+  zcat $sam | samtools view -@ ${task.cpus} -b -o ${sam}_putativecontaminants.bam
+  """
+}
+
+ process contaminant_readextraction {
+  label 'mc_small'
+  publishDir "${params.outdir}/contaminant_alignment", 
+    mode: params.publish_dir_mode, 
+    pattern: '*.txt.gz'
+
+  tag "${bam}"  
+
+  input:
+  path(bam) from ch_bam_for_contaminantreadextraction
+
+  output:
+  path "*txt.gz" into ch_readlist_for_contaminantremoval
+
+  script:
+  """
+  samtools view \
+  -@ ${task.cpus} \
+  ${bam} \
+  | cut -f 1 \
+  | pigz -p ${task.cpus} > ${bam}_putatitivecontaminants_readids.txt.gz
+  """
+}
+
+process contaminant_removal {
+  label 'mc_small'
+  tag "${bam}"
+  publishDir "${params.outdir}/target_alignment_cleaned", 
+    mode: params.publish_dir_mode, 
+    pattern: '*_cleaned.bam'
+
+  input:
+  path(bam) from ch_bam_for_contaminantremoval
+  path(txt) from ch_readlist_for_contaminantremoval
+
+  output:
+  path "*_cleaned.bam" into ch_bam_for_damageprep
+
+  """
+  picard FilterSamReads READ_LIST_FILE=${txt} FILTER=excludeReadList I=${bam} O=${bam}_cleaned.bam
+  """
+}
+
+process target_damageprofiler_preparation {
+  label 'mc_small'
+  tag "${bam}"
+  publishDir "${params.outdir}/damageprofiler/input", 
+    mode: params.publish_dir_mode, 
+    pattern: '*_cleaned.bam'
+
+  input:
+  path(bam) from ch_bam_for_damageprep
+
+  output:
+  path "*_cleaned.bam" into ch_bam_for_authentication
+
+  """
+  samtools view -F 256 ${bam} > ${bam}_tophits.bam
+  samtools view JK2782_TGGCCGATCAACGA_L008_R1_001.fastq.gz.tengrand.fq.pair1.truncated.blastn.sam.gz_putativehits.bam_cleaned.bam | cut -f 3 | uniq > all_ids.txt
+  """
+}
+
+process target_damageprofiler {
+  label 'mc_small'
+  tag "${bam}"
+  publishDir "${params.outdir}/damageprofiler/output", 
+    mode: params.publish_dir_mode, 
+    pattern: '*_cleaned.bam'
+
+  input:
+  path(bam) from ch_bam_for_damageprep
+
+  output:
+  path "*_cleaned.bam" into ch_bam_for_authentication
+
+  """
+  samtools view -F 256 ${bam} > ${bam}_tophits.bam
+
   """
 }
 

@@ -18,3 +18,4 @@ dependencies:
   - bioconda::malt=0.41
   - conda-forge::pigz=2.3.4
   - bioconda::entrez-direct=13.3
+  - bioconda::picard=2.23.2
