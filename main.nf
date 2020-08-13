@@ -28,9 +28,10 @@ def helpMessage() {
     References                        If not specified in the configuration file or you wish to overwrite any of the references
       --target_database [file/dir]          Path to target metagenomic screening reference (e.g. eukaryotic dietary species)
       --contaminant_database [file/dir]     Path to contaminants to screen against (e.g. microbial database)
-      --local_taxonomy_db                   [Not Currently Used] Path to local copy of NCBI taxonomy.dmp
+      --ete3toolkit_db                         Path to ete3 toolkit taxa.sqlite database, if not in ~/.etetoolkit/
 
     Target Screening
+      --target_taxonomic_level                Specify at which taxonomic level to screen for target taxa for. Options: 'kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'. Default: ${params.target_taxonomic_level}
       --target_tool                           Specify which classifier to use. Options: 'malt'. Default: '${params.contamination_chrom_name}'
       --target_min_support_reads              Specify a minimum number of reads  a taxon of sample total is required to have to be retained. Not compatible with . Default: ${params.target_min_support_reads}
       --target_percent_identity               Percent identity value threshold for MALT. Default: ${params.percent_identity}
@@ -99,6 +100,11 @@ if (params.contaminant_database == '' ) {
 }
 
 // Input validation
+def valid_tax_levels = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species']
+if ( !params.target_taxonomic_level in valid_tax_levels) {
+    exit 1, "[nf-core/archaeodiet] error: invalid taxonomic level specificed. Options: ${valid_tax_levels}. You gave: --target_taxonomic_level '${target_taxonomic_level}'."
+}
+
   if (params.target_tool != 'malt') {
     exit 1, "[nf-core/archaeodiet] error: metagenomic classification against target database can currently only be run with 'malt'. Please check your classifer. You gave: --target_tool '${params.target_tool}'."
   }
@@ -497,14 +503,17 @@ process target_damageprofiler_preparation {
   path(bam) from ch_bam_for_damageprep
 
   output:
-  path "*_cleaned.bam" into ch_bam_for_authentication
+  tuple path("*_tophits.bam"), path("results/*.txt") into ch_bam_for_damageauthentication
 
+  script:
+  def taxdb = params.ete3toolkit_db == '' ? '' : '-e ${params.ete3toolkit_db}'
   """
   samtools view -F 256 ${bam} > ${bam}_tophits.bam
-  samtools view JK2782_TGGCCGATCAACGA_L008_R1_001.fastq.gz.tengrand.fq.pair1.truncated.blastn.sam.gz_putativehits.bam_cleaned.bam | cut -f 3 | uniq > all_ids.txt
+  collapse_sam_taxonomy.py -i ${bam}_tophits.bam -t ${params.target_taxonomic_level} ${taxdb}
   """
 }
 
+/*
 process target_damageprofiler {
   label 'mc_small'
   tag "${bam}"
@@ -513,16 +522,15 @@ process target_damageprofiler {
     pattern: '*_cleaned.bam'
 
   input:
-  path(bam) from ch_bam_for_damageprep
+  path(bam)  from ch_bam_for_damageauthentication
 
   output:
-  path "*_cleaned.bam" into ch_bam_for_authentication
 
   """
-  samtools view -F 256 ${bam} > ${bam}_tophits.bam
 
   """
 }
+*/
 
 /*
  * STEP 2 - MultiQC

@@ -10,12 +10,15 @@ dependencies:
   - conda-forge::markdown=3.1.1
   - conda-forge::pymdown-extensions=6.0
   - conda-forge::pygments=2.5.2
-  # TODO nf-core: Add required software dependencies here
+  # nf-core: Add required software dependencies here
   - bioconda::multiqc=1.9
   - bioconda::malt=0.41
   - bioconda::samtools=1.10
-  - bioconda::damageprofiler=0.4.9
+  - bioconda::damageprofiler=0.5.0
   - bioconda::malt=0.41
   - conda-forge::pigz=2.3.4
   - bioconda::entrez-direct=13.3
-  - bioconda::picard=2.23.2
+  - bioconda::picard=2.23.3
+  - conda-forge::ete3>=3.1.1
+  - bioconda::pysam>=0.15.2
+  - bioconda::entrezpy>=2.0.5
