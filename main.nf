@@ -495,9 +495,6 @@ process contaminant_removal {
 process target_damageprofiler_preparation {
   label 'mc_small'
   tag "${bam}"
-  publishDir "${params.outdir}/damageprofiler/input", 
-    mode: params.publish_dir_mode, 
-    pattern: '*_cleaned.bam'
 
   input:
   path(bam) from ch_bam_for_damageprep
@@ -508,29 +505,38 @@ process target_damageprofiler_preparation {
   script:
   def taxdb = params.ete3toolkit_db == '' ? '' : '-e ${params.ete3toolkit_db}'
   """
-  samtools view -F 256 ${bam} > ${bam}_tophits.bam
+  samtools view -b -F 256 ${bam} > ${bam}_tophits.bam
   collapse_sam_taxonomy.py -i ${bam}_tophits.bam -t ${params.target_taxonomic_level} ${taxdb}
   """
 }
 
-/*
+
 process target_damageprofiler {
   label 'mc_small'
   tag "${bam}"
-  publishDir "${params.outdir}/damageprofiler/output", 
-    mode: params.publish_dir_mode, 
-    pattern: '*_cleaned.bam'
+  publishDir "${params.outdir}/damageprofiler/", 
+    mode: params.publish_dir_mode,
+    pattern: 'results/*'
 
   input:
-  path(bam)  from ch_bam_for_damageauthentication
+  tuple path(bam), path(taxids) from ch_bam_for_damageauthentication
 
   output:
+  path("results/*")
 
+  script:
+  // TODO: Use lastIndexOf for BAM name, somehow, instead of bash cause this is some ugly bash
+  // TODO: Cleanup output directories, workout wtf damageprofiler does with specifying the output dirs
   """
-
+  for i in *.txt; do
+    samplename=\$(echo "${bam}" | rev | cut -d '.' -f 2-99999999 | rev)
+    taxonname=\$(echo "\$i" | rev | cut -d '.' -f 2-999999999 | rev)
+    samtools view <\$(echo \$i) ${bam} -b > "\$samplename"_"\$taxonname".bam
+    damageprofiler -i "\$samplename"_"\$taxonname".bam -s "\$taxonname" -o . -yaxis_damageplot 0.30
+  done
   """
 }
-*/
+
 
 /*
  * STEP 2 - MultiQC
