@@ -492,7 +492,7 @@ process contaminant_removal {
   """
 }
 
-process target_damageprofiler_preparation {
+process target_taxonomy_collapsing {
   label 'mc_small'
   tag "${bam}"
 
@@ -505,38 +505,76 @@ process target_damageprofiler_preparation {
   script:
   def taxdb = params.ete3toolkit_db == '' ? '' : '-e ${params.ete3toolkit_db}'
   """
-  samtools view -b -F 256 ${bam} > ${bam}_tophits.bam
+  samtools view -b -F 256 ${bam} | samtools sort -@ ${task.cpus} > ${bam}_tophits.bam
   collapse_sam_taxonomy.py -i ${bam}_tophits.bam -t ${params.target_taxonomic_level} ${taxdb}
   """
 }
 
+process target_bam_splitting {
+  label 'mc_small'
+  tag "${bam}"
+
+  input:
+  tuple file(bam), path(taxids) from ch_bam_for_damageauthentication
+
+  output:
+  path("results/*bam") into ch_bam_for_damageprofiler
+  path("results/*.bam") into ch_bam_for_pydamage
+
+  script:
+  // Note, getBaseName doesn't work for path(), need to ask about that
+  samplename = bam.getBaseName()
+  """
+  samtools index ${bam}
+  mkdir results/
+  for i in *.txt; do
+    taxonname=\$(echo "\$i" | rev | cut -d '.' -f 2-999999999 | rev)
+    samtools view -b ${bam} \$(cat \$i) | samtools sort -@ ${task.cpus} > results/${samplename}_"\$taxonname".bam
+  done
+  """
+}
 
 process target_damageprofiler {
   label 'mc_small'
   tag "${bam}"
   publishDir "${params.outdir}/damageprofiler/", 
-    mode: params.publish_dir_mode,
-    pattern: 'results/*'
+    mode: params.publish_dir_mode
 
   input:
-  tuple path(bam), path(taxids) from ch_bam_for_damageauthentication
+  path(bam) from ch_bam_for_damageprofiler.flatten()
 
   output:
-  path("results/*")
+  file "*/*.txt"
+  file "*/*.log"
+  file "*/*.pdf"
+  file "*/*json" into ch_damageprofiler_for_multiqc
 
   script:
-  // TODO: Use lastIndexOf for BAM name, somehow, instead of bash cause this is some ugly bash
-  // TODO: Cleanup output directories, workout wtf damageprofiler does with specifying the output dirs
+  samplename = bam.getBaseName()
   """
-  for i in *.txt; do
-    samplename=\$(echo "${bam}" | rev | cut -d '.' -f 2-99999999 | rev)
-    taxonname=\$(echo "\$i" | rev | cut -d '.' -f 2-999999999 | rev)
-    samtools view <\$(echo \$i) ${bam} -b > "\$samplename"_"\$taxonname".bam
-    damageprofiler -i "\$samplename"_"\$taxonname".bam -s "\$taxonname" -o . -yaxis_damageplot 0.30
-  done
+  damageprofiler -i ${bam} -o . -yaxis_damageplot 0.30
   """
 }
 
+process target_pydamage {
+  label 'mc_small'
+  tag "${bam}"
+  publishDir "${params.outdir}/pydamage/", 
+    mode: params.publish_dir_mode
+
+  input:
+  file(bam) from ch_bam_for_pydamage.flatten()
+
+  output:
+  file "${samplename}"
+
+  script:
+  samplename = bam.getBaseName()
+  """
+  samtools index ${bam}
+  pydamage -o ${samplename} -m 10 -c 1 -pl -p ${task.cpus} ${bam}
+  """
+}
 
 /*
  * STEP 2 - MultiQC
@@ -552,6 +590,7 @@ process multiqc {
     file workflow_summary from ch_workflow_summary.collectFile(name: "workflow_summary_mqc.yaml")
     file ('target_alignment/*') from ch_targetmalt_for_multiqc.collect().ifEmpty([])
     file ('contaminant_alignment/*') from ch_contaminantmalt_for_multiqc.collect().ifEmpty([])
+    file ('damageprofiler*/') from ch_damageprofiler_for_multiqc.collect().ifEmpty([])
 
     output:
     file "*multiqc_report.html" into ch_multiqc_report
