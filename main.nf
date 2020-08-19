@@ -64,7 +64,11 @@ def helpMessage() {
       --damageprofiler_length       Specify length filter for DamageProfiler. Default: ${params.damageprofiler_length}
       --damageprofiler_threshold    Specify number of bases to consider for damageProfiler (e.g. on damage plot). Default: ${params.damageprofiler_threshold}
       --damageprofiler_yaxis        Specify the maximum misincorporation frequency that should be displayed on damage plot. Set to 0 to 'autoscale'. Default: ${params.damageprofiler_yaxis} 
-  
+      --pydamage_windowlength       Specify length of read to perform model fitting
+      --pydamage_minreads           Specify minimum number of reads required for calculation
+      --pydamage_coverage           Specify minimum coverage required for calculation
+      --pydamage_plots              Specify whether to produce pydamage plot images
+      --pydamage_alignments         Specify whether to produce pydamage alignment representations
 
     Other options:
       --outdir [file]                 The output directory where the results will be saved
@@ -295,6 +299,8 @@ process get_software_versions {
     samtools --version &> v_samtools.txt 2>&1 || true   
     damageprofiler --version &> v_damageprofiler.txt 2>&1 || true
     picard FilterSamReads --version &> v_filtersamreads.txt || true
+    pydamage --version | cut -d " " -f 3 &> v_pydamage.txt || true
+    collapse_sam_taxonomy.py --version &> vcollapse_sam_taxonomy.txt || true
 
     ## TODO missing eutils
     
@@ -515,18 +521,18 @@ process target_bam_splitting {
   tag "${bam}"
 
   input:
-  tuple file(bam), path(taxids) from ch_bam_for_damageauthentication
+  tuple path(bam), path(taxids) from ch_bam_for_damageauthentication
 
   output:
-  path("results/*bam") into ch_bam_for_damageprofiler
+  path("results/*.bam") into ch_bam_for_damageprofiler
   path("results/*.bam") into ch_bam_for_pydamage
 
   script:
-  // Note, getBaseName doesn't work for path(), need to ask about that
-  samplename = bam.getBaseName()
+  samplename = bam.baseName
   """
   samtools index ${bam}
   mkdir results/
+  rm unresolved_taxonomic_ids.txt
   for i in *.txt; do
     taxonname=\$(echo "\$i" | rev | cut -d '.' -f 2-999999999 | rev)
     samtools view -b ${bam} \$(cat \$i) | samtools sort -@ ${task.cpus} > results/${samplename}_"\$taxonname".bam
@@ -550,11 +556,14 @@ process target_damageprofiler {
   file "*/*json" into ch_damageprofiler_for_multiqc
 
   script:
-  samplename = bam.getBaseName()
+  samplename = bam.baseName
   """
   damageprofiler -i ${bam} -o . -yaxis_damageplot 0.30
   """
 }
+
+// TODO MAKE DUMMY FILE (with header in assests) TO MAKE PYDAMAGE MULTIQC 
+ch_pydamage = Channel.
 
 process target_pydamage {
   label 'mc_small'
@@ -566,13 +575,16 @@ process target_pydamage {
   file(bam) from ch_bam_for_pydamage.flatten()
 
   output:
-  file "${samplename}"
+  path "${samplename}/"
 
   script:
-  samplename = bam.getBaseName()
+  samplename = bam.baseName
+  def alignments = params.pydamage_alignments ? "-s" : ""
+  def plots = params.pydamage_plots ? "-pl" : ""
   """
   samtools index ${bam}
-  pydamage -o ${samplename} -m 10 -c 1 -pl -p ${task.cpus} ${bam}
+  pydamage -o ${samplename} -w ${params.pydamage_windowlength} -m ${params.pydamage_minreads} -c ${params.pydamage_coverage} ${plots} ${alignments} -p ${task.cpus} ${bam}
+  cat $(assets/) > ${samplename}/${samplename}_pydamage_mqc.csv
   """
 }
 
@@ -603,7 +615,7 @@ process multiqc {
     custom_config_file = params.multiqc_config ? "--config $mqc_custom_config" : ''
     // TODO nf-core: Specify which MultiQC modules to use with -m for a faster run time
     """
-    multiqc -f $rtitle $rfilename $custom_config_file . -s ## add s as test TODO to remove and fix properly
+    multiqc -f $rtitle $rfilename $multiqc_config $custom_config_file . -s ## add s as test TODO to remove and fix properly
     """
 }
 

@@ -8,9 +8,11 @@ regexes = {
     'nf-core/archaeodiet': ['v_pipeline.txt', r"(\S+)"],
     'Nextflow': ['v_nextflow.txt', r"(\S+)"],
     'Samtools': ['v_samtools.txt', r"samtools (\S+)"],
-    'DamageProfiler' : ['v_damageprofiler.txt', r"DamageProfiler v(\S+)"],
     'malt':['v_malt.txt',r"version (\S+)"],
-    'Picard FilterSamReads': ['v_filtersamreads.txt', r"(\S+)"],
+    'Picard FilterSamReads': ['v_filtersamreads.txt', r"Version:(\S+)"],
+    'collapse_sam_taxonomy.py': ['v_collapse_sam_taxonomy.txt', r"(\S+)"],
+    'DamageProfiler' : ['v_damageprofiler.txt', r"DamageProfiler v(\S+)"],
+    'pydamage' : ['v_pydamage.txt', r"(\S+)"],
     'MultiQC': ['v_multiqc.txt', r"multiqc, version (\S+)"],
 }
 results = OrderedDict()
