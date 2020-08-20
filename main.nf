@@ -166,8 +166,8 @@ if ( !params.target_taxonomic_level in valid_tax_levels) {
   }
 
 
-// Has the run name been specified by the user?
-// this has the bonus effect of catching both -name and --name
+// Has the run name been specified by the user? this has the bonus effect of
+// catching both -name and --name
 custom_runName = params.name
 if (!(workflow.runName ==~ /[a-z]+_[a-z]+/)) {
     custom_runName = workflow.runName
@@ -177,10 +177,11 @@ if (!(workflow.runName ==~ /[a-z]+_[a-z]+/)) {
 if (workflow.profile.contains('awsbatch')) {
     // AWSBatch sanity checking
     if (!params.awsqueue || !params.awsregion) exit 1, "Specify correct --awsqueue and --awsregion parameters on AWSBatch!"
-    // Check outdir paths to be S3 buckets if running on AWSBatch
-    // related: https://github.com/nextflow-io/nextflow/issues/813
+    // Check outdir paths to be S3 buckets if running on AWSBatch related:
+    // https://github.com/nextflow-io/nextflow/issues/813
     if (!params.outdir.startsWith('s3:')) exit 1, "Outdir not on S3 - specify S3 Bucket to run on AWSBatch!"
-    // Prevent trace files to be stored on S3 since S3 does not support rolling files.
+    // Prevent trace files to be stored on S3 since S3 does not support rolling
+    // files.
     if (params.tracedir.startsWith('s3:')) exit 1, "Specify a local tracedir or run without trace! S3 cannot be used for tracefiles."
 }
 
@@ -216,6 +217,9 @@ ch_database_for_contaminantalignment = Channel
 } else {
     exit 1, "[nf-core/archaeodiet] contaminant database was not supplied. Please check input parameters."
 }
+
+// Load dummy header for pydamage output
+pydamage_header = file("$baseDir/assets/multiqc_pydamage_customcontent_header.txt")
 
 // Header log info
 log.info nfcoreHeader()
@@ -301,8 +305,6 @@ process get_software_versions {
     picard FilterSamReads --version &> v_filtersamreads.txt || true
     pydamage --version | cut -d " " -f 3 &> v_pydamage.txt || true
     collapse_sam_taxonomy.py --version &> vcollapse_sam_taxonomy.txt || true
-
-    ## TODO missing eutils
     
     multiqc --version > v_multiqc.txt
     scrape_software_versions.py &> software_versions_mqc.yaml
@@ -313,7 +315,7 @@ process get_software_versions {
  * STEP 1- Target DB Screening
  */
 
- process target_alignment_malt {
+process target_alignment_malt {
   label 'mc_small'
   publishDir "${params.outdir}/target_alignment", 
     mode: params.publish_dir_mode, 
@@ -363,7 +365,7 @@ process get_software_versions {
   """
 }
 
- process target_fileconversion {
+process target_fileconversion {
   label 'mc_small'
   tag "${sam}"
   publishDir "${params.outdir}/target_alignment", mode:"copy"
@@ -385,7 +387,7 @@ process get_software_versions {
   """
 }
 
- process contaminant_alignment_malt {
+process contaminant_alignment_malt {
   label 'mc_small'
 
   publishDir "${params.outdir}/contaminant_alignment", 
@@ -435,7 +437,7 @@ process get_software_versions {
   """
 }
 
- process contaminant_fileconversion {
+process contaminant_fileconversion {
   label 'mc_small'
   tag "${sam}"  
 
@@ -455,7 +457,7 @@ process get_software_versions {
   """
 }
 
- process contaminant_readextraction {
+process contaminant_readextraction {
   label 'mc_small'
   publishDir "${params.outdir}/contaminant_alignment", 
     mode: params.publish_dir_mode, 
@@ -562,9 +564,6 @@ process target_damageprofiler {
   """
 }
 
-// TODO MAKE DUMMY FILE (with header in assests) TO MAKE PYDAMAGE MULTIQC 
-ch_pydamage = Channel.
-
 process target_pydamage {
   label 'mc_small'
   tag "${bam}"
@@ -575,7 +574,9 @@ process target_pydamage {
   file(bam) from ch_bam_for_pydamage.flatten()
 
   output:
-  path "${samplename}/"
+  path "${samplename}/pydamage_results.csv" optional true
+  path "${samplename}/plots" optional true
+  path("*/*_pydamage_mqc.csv") optional true into ch_pydamage_for_multiqc
 
   script:
   samplename = bam.baseName
@@ -584,7 +585,17 @@ process target_pydamage {
   """
   samtools index ${bam}
   pydamage -o ${samplename} -w ${params.pydamage_windowlength} -m ${params.pydamage_minreads} -c ${params.pydamage_coverage} ${plots} ${alignments} -p ${task.cpus} ${bam}
-  cat $(assets/) > ${samplename}/${samplename}_pydamage_mqc.csv
+  
+  if [[ -e  ${samplename}/pydamage_results.csv ]]; then
+    ## make new sample column
+    ref_len=\$(wc -l ${samplename}/pydamage_results.csv | cut -f 1 -d ' ')
+    samples=\$(expr \$ref_len - 1)
+    filename=\$(dirname ${samplename}/pydamage_results.csv)
+
+    paste <(echo "sample_name" && yes "\$filename" | head -n \${samples}) ${samplename}/pydamage_results.csv  -d ',' > ${samplename}/tmp.csv
+    ## merge header
+    cat ${pydamage_header} ${samplename}/tmp.csv > ${samplename}/${samplename}_pydamage_mqc.csv
+  fi
   """
 }
 
@@ -597,12 +608,14 @@ process multiqc {
     input:
     file (multiqc_config) from ch_multiqc_config
     file (mqc_custom_config) from ch_multiqc_custom_config.collect().ifEmpty([])
-    // TODO nf-core: Add in log files from your new processes for MultiQC to find!
+    // TODO nf-core: Add in log files from your new processes for MultiQC to
+    // find!
     file ('software_versions/*') from ch_software_versions_yaml.collect()
     file workflow_summary from ch_workflow_summary.collectFile(name: "workflow_summary_mqc.yaml")
     file ('target_alignment/*') from ch_targetmalt_for_multiqc.collect().ifEmpty([])
     file ('contaminant_alignment/*') from ch_contaminantmalt_for_multiqc.collect().ifEmpty([])
     file ('damageprofiler*/') from ch_damageprofiler_for_multiqc.collect().ifEmpty([])
+    file ('pydamage/*') from ch_pydamage_for_multiqc.collect().ifEmpty([])
 
     output:
     file "*multiqc_report.html" into ch_multiqc_report
@@ -613,7 +626,6 @@ process multiqc {
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
     rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
     custom_config_file = params.multiqc_config ? "--config $mqc_custom_config" : ''
-    // TODO nf-core: Specify which MultiQC modules to use with -m for a faster run time
     """
     multiqc -f $rtitle $rfilename $multiqc_config $custom_config_file . -s ## add s as test TODO to remove and fix properly
     """
@@ -670,7 +682,6 @@ workflow.onComplete {
     email_fields['summary']['Nextflow Build'] = workflow.nextflow.build
     email_fields['summary']['Nextflow Compile Timestamp'] = workflow.nextflow.timestamp
 
-    // TODO nf-core: If not using MultiQC, strip out this code (including params.max_multiqc_email_size)
     // On success try attach the multiqc report
     def mqc_report = null
     try {
