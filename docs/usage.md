@@ -2,43 +2,42 @@
 
 ## Table of contents
 
-* [Table of contents](#table-of-contents)
-* [Introduction](#introduction)
-* [Running the pipeline](#running-the-pipeline)
-  * [Updating the pipeline](#updating-the-pipeline)
-  * [Reproducibility](#reproducibility)
-* [Main arguments](#main-arguments)
-  * [`-profile`](#-profile)
-  * [`--reads`](#--reads)
-  * [`--single_end`](#--single_end)
-* [Reference genomes](#reference-genomes)
-  * [`--genome` (using iGenomes)](#--genome-using-igenomes)
-  * [`--fasta`](#--fasta)
-  * [`--igenomes_ignore`](#--igenomes_ignore)
-* [Job resources](#job-resources)
-  * [Automatic resubmission](#automatic-resubmission)
-  * [Custom resource requests](#custom-resource-requests)
-* [AWS Batch specific parameters](#aws-batch-specific-parameters)
-  * [`--awsqueue`](#--awsqueue)
-  * [`--awsregion`](#--awsregion)
-  * [`--awscli`](#--awscli)
-* [Other command line parameters](#other-command-line-parameters)
-  * [`--outdir`](#--outdir)
-  * [`--publish_dir_mode`](#--publish_dir_mode)
-  * [`--email`](#--email)
-  * [`--email_on_fail`](#--email_on_fail)
-  * [`--max_multiqc_email_size`](#--max_multiqc_email_size)
-  * [`-name`](#-name)
-  * [`-resume`](#-resume)
-  * [`-c`](#-c)
-  * [`--custom_config_version`](#--custom_config_version)
-  * [`--custom_config_base`](#--custom_config_base)
-  * [`--max_memory`](#--max_memory)
-  * [`--max_time`](#--max_time)
-  * [`--max_cpus`](#--max_cpus)
-  * [`--plaintext_email`](#--plaintext_email)
-  * [`--monochrome_logs`](#--monochrome_logs)
-  * [`--multiqc_config`](#--multiqc_config)
+- [nf-core/archaeodiet: Usage](#nf-corearchaeodiet-usage)
+  - [Table of contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Running the pipeline](#running-the-pipeline)
+    - [Updating the pipeline](#updating-the-pipeline)
+    - [Reproducibility](#reproducibility)
+  - [Main arguments](#main-arguments)
+    - [`-profile`](#-profile)
+    - [`--input`](#--input)
+    - [--target_db](#--target_db)
+    - [--contaminant_db](#--contaminant_db)
+    - [--ete3toolkit_db: this is provided by ete3](#--ete3toolkit_db-this-is-provided-by-ete3)
+  - [Job resources](#job-resources)
+    - [Automatic resubmission](#automatic-resubmission)
+    - [Custom resource requests](#custom-resource-requests)
+  - [AWS Batch specific parameters](#aws-batch-specific-parameters)
+    - [`--awsqueue`](#--awsqueue)
+    - [`--awsregion`](#--awsregion)
+    - [`--awscli`](#--awscli)
+  - [Other command line parameters](#other-command-line-parameters)
+    - [`--outdir`](#--outdir)
+    - [`--publish_dir_mode`](#--publish_dir_mode)
+    - [`--email`](#--email)
+    - [`--email_on_fail`](#--email_on_fail)
+    - [`--max_multiqc_email_size`](#--max_multiqc_email_size)
+    - [`-name`](#-name)
+    - [`-resume`](#-resume)
+    - [`-c`](#-c)
+    - [`--custom_config_version`](#--custom_config_version)
+    - [`--custom_config_base`](#--custom_config_base)
+    - [`--max_memory`](#--max_memory)
+    - [`--max_time`](#--max_time)
+    - [`--max_cpus`](#--max_cpus)
+    - [`--plaintext_email`](#--plaintext_email)
+    - [`--monochrome_logs`](#--monochrome_logs)
+    - [`--multiqc_config`](#--multiqc_config)
 
 ## Introduction
 
@@ -120,12 +119,12 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 
 <!-- TODO nf-core: Document required command line parameters -->
 
-### `--reads`
+### `--input`
 
 Use this to specify the location of your input FastQ files. For example:
 
 ```bash
---reads 'path/to/data/sample_*_{1,2}.fastq'
+--input 'path/to/data/sample_*_{1,2}.fastq'
 ```
 
 Please note the following requirements:
@@ -136,67 +135,34 @@ Please note the following requirements:
 
 If left unspecified, a default pattern is used: `data/*{1,2}.fastq.gz`
 
-### `--single_end`
+### --target_db
 
-By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--single_end` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--reads`. For example:
+Path to target metagenomic screening reference (e.g. eukaryotic dietary species).
 
-```bash
---single_end --reads '*.fastq'
-```
+This would be a pre-built MALT database containing taxa that you _want_ to
+ideally find (e.g. eukaryotes)
 
-It is not possible to run a mixture of single-end and paired-end files in one run.
+### --contaminant_db
 
-## Reference genomes
+Path to contaminants to screen against (e.g. microbial database).
 
-The pipeline config files come bundled with paths to the illumina iGenomes reference index files. If running with docker or AWS, the configuration is set up to use the [AWS-iGenomes](https://ewels.github.io/AWS-iGenomes/) resource.
+This would be a pre-built MALT database containing taxa that could be act
+as possible contaminants (e.g. bacteria)
 
-### `--genome` (using iGenomes)
 
-There are 31 different species supported in the iGenomes references. To run the pipeline, you must specify which to use with the `--genome` flag.
+### --ete3toolkit_db: this is provided by ete3
 
-You can find the keys to specify the genomes in the [iGenomes config file](../conf/igenomes.config). Common genomes that are supported are:
+Path to ete3 toolkit taxa.sqlite database, if not in `~/.etetoolkit/`
 
-* Human
-  * `--genome GRCh37`
-* Mouse
-  * `--genome GRCm38`
-* _Drosophila_
-  * `--genome BDGP6`
-* _S. cerevisiae_
-  * `--genome 'R64-1-1'`
-
-> There are numerous others - check the config file for more.
-
-Note that you can use the same configuration setup to save sets of reference files for your own use, even if they are not part of the iGenomes resource. See the [Nextflow documentation](https://www.nextflow.io/docs/latest/config.html) for instructions on where to save such a file.
-
-The syntax for this reference configuration is as follows:
-
-<!-- TODO nf-core: Update reference genome example according to what is needed -->
-
-```nextflow
-params {
-  genomes {
-    'GRCh37' {
-      fasta   = '<path to the genome fasta file>' // Used if no star index given
-    }
-    // Any number of additional genomes, key is used with --genome
-  }
-}
-```
-
-<!-- TODO nf-core: Describe reference path flags -->
-
-### `--fasta`
-
-If you prefer, you can specify the full path to your reference genome when you run the pipeline:
+Can be generated after [installing etetoolkit](http://etetoolkit.org/download/) and then running the following command:
 
 ```bash
---fasta '[path to Fasta reference]'
+ete3 ncbiquery --create
 ```
 
-### `--igenomes_ignore`
+The resulting file sizes are ~550MB
 
-Do not load `igenomes.config` when running the pipeline. You may choose this option if you observe clashes between custom parameters and those supplied in `igenomes.config`.
+> We may offer this an automatic construction of this in the future
 
 ## Job resources
 

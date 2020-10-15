@@ -15,7 +15,7 @@ dependencies:
   - bioconda::malt=0.41
   - bioconda::samtools=1.10
   - bioconda::damageprofiler=0.4.9
-  - bioconda::malt=0.41
+  - bioconda::malt=0.5.0
   - conda-forge::pigz=2.3.4
   - bioconda::entrez-direct=13.3
   - bioconda::picard=2.23.3

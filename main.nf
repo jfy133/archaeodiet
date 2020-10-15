@@ -26,8 +26,8 @@ def helpMessage() {
                                     Available: conda, docker, singularity, test, awsbatch, <institute> and more
 
     References                        If not specified in the configuration file or you wish to overwrite any of the references
-      --target_database [file/dir]          Path to target metagenomic screening reference (e.g. eukaryotic dietary species)
-      --contaminant_database [file/dir]     Path to contaminants to screen against (e.g. microbial database)
+      --target_db [file/dir]          Path to target metagenomic screening reference (e.g. eukaryotic dietary species)
+      --contaminant_db [file/dir]     Path to contaminants to screen against (e.g. microbial database)
       --ete3toolkit_db                         Path to ete3 toolkit taxa.sqlite database, if not in ~/.etetoolkit/
 
     Target Screening
@@ -95,12 +95,12 @@ if (params.help) {
  * SET UP CONFIGURATION VARIABLES
  */
 
-if (params.target_database == '' ) {
-    exit 1, "[nf-core/archaeodiet] error: target database alignment requires a path to a database directory. Please specify one with --target_database '/path/to/database/'."
+if (params.target_db == '' ) {
+    exit 1, "[nf-core/archaeodiet] error: target database alignment requires a path to a database directory. Please specify one with --target_db '/path/to/database/'."
 }
 
-if (params.contaminant_database == '' ) {
-    exit 1, "[nf-core/archaeodiet] error: contaminant database alignment requires a path to a database directory. Please specify one with --contaminant_database '/path/to/database/'."
+if (params.contaminant_db == '' ) {
+    exit 1, "[nf-core/archaeodiet] error: contaminant database alignment requires a path to a database directory. Please specify one with --contaminant_db '/path/to/database/'."
 }
 
 // Input validation
@@ -204,16 +204,16 @@ if (params.input) {
     exit 1, "[nf-core/archaeodiet] input was not supplied. PLease check input parameters"
 }
 
-if ( params.target_database ) {
-ch_database_for_targetalignment = Channel
-    .fromPath(params.target_database, checkIfExists: true, type: 'dir')
+if ( params.target_db ) {
+ch_db_for_targetalignment = Channel
+    .fromPath(params.target_db, checkIfExists: true, type: 'dir')
 } else {
     exit 1, "[nf-core/archaeodiet] target database was not supplied. Please check input parameters."
 }
 
-if ( params.contaminant_database ) {
-ch_database_for_contaminantalignment = Channel
-    .fromPath(params.contaminant_database, checkIfExists: true, type: 'dir')
+if ( params.contaminant_db ) {
+ch_db_for_contaminantalignment = Channel
+    .fromPath(params.contaminant_db, checkIfExists: true, type: 'dir')
 } else {
     exit 1, "[nf-core/archaeodiet] contaminant database was not supplied. Please check input parameters."
 }
@@ -228,8 +228,8 @@ if (workflow.revision) summary['Pipeline Release'] = workflow.revision
 summary['Run Name']         = custom_runName ?: workflow.runName
 // TODO nf-core: Report custom parameters here
 summary['Input']            = params.input
-summary['Target DB']        = params.target_database
-summary['Contaminant DB']   = params.contaminant_database
+summary['Target DB']        = params.target_db
+summary['Contaminant DB']   = params.contaminant_db
 summary['Max Resources']    = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
 if (workflow.containerEngine) summary['Container'] = "$workflow.containerEngine - $workflow.container"
 summary['Output dir']       = params.outdir
@@ -326,7 +326,7 @@ process target_alignment_malt {
 
   input:
   path(fastqs) from ch_input_for_targetalignment.collect()
-  path db from ch_database_for_targetalignment
+  path db from ch_db_for_targetalignment
 
   output:
   path "*.sam.gz" into ch_sam_for_targetsamtobam mode flatten
@@ -399,7 +399,7 @@ process contaminant_alignment_malt {
 
   input:
   path(fastqs) from ch_fastq_for_contaminantalignment.collect()
-  path db from ch_database_for_contaminantalignment
+  path db from ch_db_for_contaminantalignment
 
   output:
   path "*.sam.gz" into ch_sam_for_contaminantsamtobam mode flatten
