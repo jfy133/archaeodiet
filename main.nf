@@ -207,16 +207,16 @@ if (params.input) {
     exit 1, "[nf-core/archaeodiet] input was not supplied. PLease check input parameters"
 }
 
-if ( params.target_db ) {
-ch_db_for_targetalignment = Channel
-    .fromPath(params.target_db, checkIfExists: true, type: 'dir')
+if ( params.target_db != '' ) {
+  ch_db_for_targetalignment = Channel
+      .fromPath(params.target_db, checkIfExists: true, type: 'dir')
 } else {
     exit 1, "[nf-core/archaeodiet] target database was not supplied. Please check input parameters."
 }
 
-if ( params.contaminant_db ) {
-ch_db_for_contaminantalignment = Channel
-    .fromPath(params.contaminant_db, checkIfExists: true, type: 'dir')
+if ( params.contaminant_db != '' ) {
+  ch_db_for_contaminantalignment = Channel
+      .fromPath(params.contaminant_db, checkIfExists: true, type: 'dir')
 } else {
     exit 1, "[nf-core/archaeodiet] contaminant database was not supplied. Please check input parameters."
 }
