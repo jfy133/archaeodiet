@@ -32,16 +32,16 @@ def helpMessage() {
 
     Target Screening
       --target_taxonomic_level                Specify at which taxonomic level to screen for target taxa for. Options: 'kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'. Default: ${params.target_taxonomic_level}
-      --target_tool                           Specify which classifier to use. Options: 'malt'. Default: '${params.contamination_chrom_name}'
+      --target_tool                           Specify which classifier to use. Options: 'malt'. Default: '${params.target_tool}'
       --target_min_support_reads              Specify a minimum number of reads  a taxon of sample total is required to have to be retained. Not compatible with . Default: ${params.target_min_support_reads}
-      --target_percent_identity               Percent identity value threshold for MALT. Default: ${params.percent_identity}
-      --target_malt_mode                      Specify which alignment method to use for MALT. Options: 'Unknown', 'BlastN', 'BlastP', 'BlastX', 'Classifier'. Default: '${params.malt_mode}'
-      --target_malt_alignment_mode            Specify alignment method for MALT. Options: 'Local', 'SemiGlobal'. Default: '${params.malt_alignment_mode}'
-      --target_malt_top_percent               Specify the percent for LCA algorithm for MALT (see MEGAN6 CE manual). Default: ${params.malt_top_percent}
-      --target_malt_min_support_mode          Specify whether to use percent or raw number of reads for minimum support required for taxon to be retained for MALT. Options: 'percent', 'reads'. Default: '${params.malt_min_support_mode}'
-      --target_malt_min_support_percent       Specify the minimum percentage of reads a taxon of sample total is required to have to be retained for MALT. Default: Default: ${params.malt_min_support_percent}
-      --target_malt_max_queries               Specify the maximium number of queries a read can have for MALT. Default: ${params.malt_max_queries}
-      --target_malt_memory_mode               Specify the memory load method. Do not use 'map' with GTFS file system for MALT. Options: 'load', 'page', 'map'. Default: '${params.malt_memory_mode}'
+      --target_percent_identity               Percent identity value threshold for MALT. Default: ${params.target_percent_identity}
+      --target_malt_mode                      Specify which alignment method to use for MALT. Options: 'Unknown', 'BlastN', 'BlastP', 'BlastX', 'Classifier'. Default: '${params.target_malt_mode}'
+      --target_malt_alignment_mode            Specify alignment method for MALT. Options: 'Local', 'SemiGlobal'. Default: '${params.target_alt_alignment_mode}'
+      --target_malt_top_percent               Specify the percent for LCA algorithm for MALT (see MEGAN6 CE manual). Default: ${params.target_malt_top_percent}
+      --target_malt_min_support_mode          Specify whether to use percent or raw number of reads for minimum support required for taxon to be retained for MALT. Options: 'percent', 'reads'. Default: '${params.target_malt_min_support_mode}'
+      --target_malt_min_support_percent       Specify the minimum percentage of reads a taxon of sample total is required to have to be retained for MALT. Default: Default: ${params.target_malt_min_support_percent}
+      --target_malt_max_queries               Specify the maximium number of queries a read can have for MALT. Default: ${params.target_malt_max_queries}
+      --target_malt_memory_mode               Specify the memory load method. Do not use 'map' with GTFS file system for MALT. Options: 'load', 'page', 'map'. Default: '${params.target_malt_memory_mode}'
       --target_malt_weighted_lca              Specify whether to use MALT's 'weighted' LCA algorithm
       --target_malt_weighted_lca_perc         Specify the weighted-LCA percentage of weight to cover. Default: ${params.target_malt_weighted_lca_perc}
 
@@ -90,6 +90,9 @@ if (params.help) {
     helpMessage()
     exit 0
 }
+
+log.info("workflow params")
+log.info("${params}")
 
 /*
  * SET UP CONFIGURATION VARIABLES
