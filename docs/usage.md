@@ -152,13 +152,15 @@ as possible contaminants (e.g. bacteria)
 
 ### --ete3toolkit_db: this is provided by ete3
 
-Path to ete3 toolkit taxa.sqlite database, if not in `~/.etetoolkit/`
+Path to ete3 toolkit `taxa.sqlite` database file.
 
 Can be generated after [installing etetoolkit](http://etetoolkit.org/download/) and then running the following command:
 
 ```bash
 ete3 ncbiquery --create
 ```
+
+This command by default saves `~/.etetoolkit/` but _can_ be moved elsewhere if you have space limits in `$HOME`.
 
 The resulting file sizes are ~550MB
 
