@@ -514,10 +514,9 @@ process target_taxonomy_collapsing {
   tuple path("*_tophits.bam"), path("results/*.txt") into ch_bam_for_damageauthentication
 
   script:
-  def taxdb = params.ete3toolkit_db == '' ? '' : '-e ${params.ete3toolkit_db}'
   """
   samtools view -b -F 256 ${bam} | samtools sort -@ ${task.cpus} > ${bam}_tophits.bam
-  collapse_sam_taxonomy.py -i ${bam}_tophits.bam -t ${params.target_taxonomic_level} ${taxdb}
+  collapse_sam_taxonomy.py -i ${bam}_tophits.bam -t ${params.target_taxonomic_level} ${params.ete3toolkit_db}
   """
 }
 
