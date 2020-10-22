@@ -48,14 +48,14 @@ def helpMessage() {
     Contaminant Screening
       --contaminant_tool                           Specify which classifier to use. Options: 'malt', 'kraken'. Default: '${params.contamination_chrom_name}'
       --contaminant_min_support_reads              Specify a minimum number of reads  a taxon of sample total is required to have to be retained. Not compatible with . Default: ${params.contaminant_min_support_reads}
-      --contaminant_percent_identity               Percent identity value threshold for MALT. Default: ${params.percent_identity}
-      --contaminant_malt_mode                      Specify which alignment method to use for MALT. Options: 'Unknown', 'BlastN', 'BlastP', 'BlastX', 'Classifier'. Default: '${params.malt_mode}'
-      --contaminant_malt_alignment_mode            Specify alignment method for MALT. Options: 'Local', 'SemiGlobal'. Default: '${params.malt_alignment_mode}'
-      --contaminant_malt_top_percent               Specify the percent for LCA algorithm for MALT (see MEGAN6 CE manual). Default: ${params.malt_top_percent}
-      --contaminant_malt_min_support_mode          Specify whether to use percent or raw number of reads for minimum support required for taxon to be retained for MALT. Options: 'percent', 'reads'. Default: '${params.malt_min_support_mode}'
-      --contaminant_malt_min_support_percent       Specify the minimum percentage of reads a taxon of sample total is required to have to be retained for MALT. Default: Default: ${params.malt_min_support_percent}
-      --contaminant_malt_max_queries               Specify the maximium number of queries a read can have for MALT. Default: ${params.malt_max_queries}
-      --contaminant_malt_memory_mode               Specify the memory load method. Do not use 'map' with GTFS file system for MALT. Options: 'load', 'page', 'map'. Default: '${params.malt_memory_mode}'
+      --contaminant_percent_identity               Percent identity value threshold for MALT. Default: ${params.contaminant_percent_identity}
+      --contaminant_malt_mode                      Specify which alignment method to use for MALT. Options: 'Unknown', 'BlastN', 'BlastP', 'BlastX', 'Classifier'. Default: '${params.contaminant_malt_mode}'
+      --contaminant_malt_alignment_mode            Specify alignment method for MALT. Options: 'Local', 'SemiGlobal'. Default: '${params.contaminant_malt_alignment_mode}'
+      --contaminant_malt_top_percent               Specify the percent for LCA algorithm for MALT (see MEGAN6 CE manual). Default: ${params.contaminant_malt_top_percent}
+      --contaminant_malt_min_support_mode          Specify whether to use percent or raw number of reads for minimum support required for taxon to be retained for MALT. Options: 'percent', 'reads'. Default: '${params.contaminant_malt_min_support_mode}'
+      --contaminant_malt_min_support_percent       Specify the minimum percentage of reads a taxon of sample total is required to have to be retained for MALT. Default: Default: ${params.contaminant_malt_min_support_percent}
+      --contaminant_malt_max_queries               Specify the maximium number of queries a read can have for MALT. Default: ${params.contaminant_malt_max_queries}
+      --contaminant_malt_memory_mode               Specify the memory load method. Do not use 'map' with GTFS file system for MALT. Options: 'load', 'page', 'map'. Default: '${params.contaminant_malt_memory_mode}'
       --contaminant_malt_weighted_lca              Specify whether to use MALT's 'weighted' LCA algorihthm
       --contaminant_malt_weighted_lca_per          Specify the weighted-LCA percentage of weight to cover. Default: ${params.contaminant_malt_weighted_lca_perc}
 
