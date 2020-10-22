@@ -91,8 +91,8 @@ if (params.help) {
     exit 0
 }
 
-log.info("workflow params")
-log.info("${params}")
+//log.info("workflow params")
+//log.info("${params}")
 
 /*
  * SET UP CONFIGURATION VARIABLES
