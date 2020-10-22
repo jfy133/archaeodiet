@@ -566,11 +566,15 @@ process target_damageprofiler {
   """
 }
 
+
 process target_pydamage {
   label 'mc_small'
   tag "${bam}"
   publishDir "${params.outdir}/pydamage/", 
     mode: params.publish_dir_mode
+
+  when:
+  params.run_pydamage
 
   input:
   file(bam) from ch_bam_for_pydamage.flatten()
