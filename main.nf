@@ -516,7 +516,9 @@ process target_taxonomy_collapsing {
   script:
   """
   samtools view -b -F 256 ${bam} | samtools sort -@ ${task.cpus} > ${bam}_tophits.bam
-  collapse_sam_taxonomy.py -i ${bam}_tophits.bam -t ${params.target_taxonomic_level} ${params.ete3toolkit_db}
+
+  ## [[ ! -z "$NCBI_API_KEY" ]] && cores=10 || x=3
+  collapse_taxonomy.py -i  ${bam}_tophits.bam -t ${params.target_taxonomic_level} -e ${params.ete3toolkit_db}
   """
 }
 

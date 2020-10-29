@@ -17,9 +17,10 @@ dependencies:
   - bioconda::damageprofiler=1.1
   - bioconda::malt=0.5.0
   - conda-forge::pigz=2.3.4
-  - bioconda::entrez-direct=13.3
+  - bioconda::entrez-direct>=13.0
   - bioconda::picard=2.23.3
   - conda-forge::ete3>=3.1.1
   - bioconda::pysam>=0.15.2
   - bioconda::entrezpy>=2.0.5
   - maxibor::pydamage>=0.3.0
+  - conda-forge::parallel
