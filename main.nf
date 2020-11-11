@@ -28,7 +28,7 @@ def helpMessage() {
     References                        If not specified in the configuration file or you wish to overwrite any of the references
       --target_db [file/dir]          Path to target metagenomic screening reference (e.g. eukaryotic dietary species)
       --contaminant_db [file/dir]     Path to contaminants to screen against (e.g. microbial database)
-      --ete3toolkit_db                         Path to ete3 toolkit taxa.sqlite database, if not in ~/.etetoolkit/
+      --ete3toolkit_db                Path to ete3 toolkit taxa.sqlite database, if not in ~/.etetoolkit/
 
     Target Screening
       --target_taxonomic_level                Specify at which taxonomic level to screen for target taxa for. Options: 'kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'. Default: ${params.target_taxonomic_level}
@@ -59,6 +59,9 @@ def helpMessage() {
       --contaminant_malt_weighted_lca              Specify whether to use MALT's 'weighted' LCA algorihthm
       --contaminant_malt_weighted_lca_per          Specify the weighted-LCA percentage of weight to cover. Default: ${params.contaminant_malt_weighted_lca_perc}
 
+    Entrez Information
+      --entrez_api_key   Specify your NCBI entrez API key. See: https://ncbiinsights.ncbi.nlm.nih.gov/2017/11/02/new
+      --entrez_email     Specify the email address associated with your API key.
 
     Damage Profiling
       --damageprofiler_length       Specify length filter for DamageProfiler. Default: ${params.damageprofiler_length}
@@ -168,6 +171,15 @@ if ( !params.target_taxonomic_level in valid_tax_levels) {
     exit 1, "[nf-core/archaeodiet] error: incompatible min_support_reads configuration. min_support_reads can only be used with integers. --target_min_support_reads You gave: ${params.target_min_support_reads}."
   }
 
+if (params.entrez_api_key == ''){
+    exit 1, "[nf-core/archaeodiet] error: Entrez API key is required due to NCBI rules. See documentation on how to obtain. Please supply with: --entrez_api_key."
+
+}
+
+if (params.entrez_api_email == ''){
+    exit 1, "[nf-core/archaeodiet] error: email address used with Entrez API key is required due to NCBI rules. Please supply with: --entrez_api_email."
+
+}
 
 // Has the run name been specified by the user? this has the bonus effect of
 // catching both -name and --name
@@ -307,7 +319,7 @@ process get_software_versions {
     damageprofiler --version &> v_damageprofiler.txt 2>&1 || true
     picard FilterSamReads --version &> v_filtersamreads.txt || true
     pydamage --version | cut -d " " -f 3 &> v_pydamage.txt || true
-    collapse_sam_taxonomy.py --version &> vcollapse_sam_taxonomy.txt || true
+    collapse_taxonomy.py --version &> vcollapse_taxonomy_sam_taxonomy.txt || true
     
     multiqc --version > v_multiqc.txt
     scrape_software_versions.py &> software_versions_mqc.yaml
@@ -516,9 +528,9 @@ process target_taxonomy_collapsing {
   script:
   """
   samtools view -b -F 256 ${bam} | samtools sort -@ ${task.cpus} > ${bam}_tophits.bam
+  samtools index ${bam}_tophits.bam
 
-  ## [[ ! -z "$NCBI_API_KEY" ]] && cores=10 || x=3
-  collapse_taxonomy.py -i  ${bam}_tophits.bam -t ${params.target_taxonomic_level} -e ${params.ete3toolkit_db}
+  collapse_taxonomy.py -i  ${bam}_tophits.bam -t ${params.target_taxonomic_level} -d ${params.ete3toolkit_db} -a ${params.entrez_api_key} -e ${params.entrez_api_email}
   """
 }
 
@@ -538,7 +550,15 @@ process target_bam_splitting {
   """
   samtools index ${bam}
   mkdir results/
-  rm unresolved_taxonomic_ids.txt
+  
+  if [[ -z assigned_rank_noname.txt ]]; then
+    rm assigned_rank_noname.txt
+  fi
+  
+  if [[ -z too_high_or_unknown.txt ]]; then
+    rm too_high_or_unknown.txt
+  fi
+  
   for i in *.txt; do
     taxonname=\$(echo "\$i" | rev | cut -d '.' -f 2-999999999 | rev)
     samtools view -b ${bam} \$(cat \$i) | samtools sort -@ ${task.cpus} > results/${samplename}_"\$taxonname".bam
@@ -556,15 +576,15 @@ process target_damageprofiler {
   path(bam) from ch_bam_for_damageprofiler.flatten()
 
   output:
-  file "*/*.txt"
-  file "*/*.log"
-  file "*/*.pdf"
-  file "*/*json" into ch_damageprofiler_for_multiqc
+  file "*.txt"
+  file "*.log"
+  file "*.pdf"
+  file "*json" into ch_damageprofiler_for_multiqc
 
   script:
   samplename = bam.baseName
   """
-  damageprofiler -i ${bam} -o . -yaxis_damageplot 0.30
+  damageprofiler -i ${bam} -o ${bam.baseName}/ -yaxis_dp_max 0.30
   """
 }
 

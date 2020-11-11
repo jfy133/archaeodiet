@@ -10,17 +10,18 @@ dependencies:
   - conda-forge::markdown=3.1.1
   - conda-forge::pymdown-extensions=6.0
   - conda-forge::pygments=2.5.2
-  # nf-core: Add required software dependencies here
+  # bioinformatic tools
   - bioconda::multiqc=1.9
   - bioconda::malt=0.5.0
   - bioconda::samtools=1.10
   - bioconda::damageprofiler=1.1
   - bioconda::malt=0.5.0
-  - conda-forge::pigz=2.3.4
-  - bioconda::entrez-direct>=13.0
   - bioconda::picard=2.23.3
+  - maxibor::pydamage>=0.3
+  # python packages
   - conda-forge::ete3>=3.1.1
   - bioconda::pysam>=0.15.2
   - bioconda::entrezpy>=2.0.5
-  - maxibor::pydamage>=0.3.0
+  # utilities
   - conda-forge::parallel
+  - conda-forge::pigz=2.3.4
