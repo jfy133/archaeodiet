@@ -14,6 +14,8 @@
     - [--target_db](#--target_db)
     - [--contaminant_db](#--contaminant_db)
     - [--ete3toolkit_db: this is provided by ete3](#--ete3toolkit_db-this-is-provided-by-ete3)
+    - [--entrez_api_key](#--entrez_api_key)
+    - [--entrez_email](#--entrez_email)
   - [Job resources](#job-resources)
     - [Automatic resubmission](#automatic-resubmission)
     - [Custom resource requests](#custom-resource-requests)
@@ -149,7 +151,6 @@ Path to contaminants to screen against (e.g. microbial database).
 This would be a pre-built MALT database containing taxa that could be act
 as possible contaminants (e.g. bacteria)
 
-
 ### --ete3toolkit_db: this is provided by ete3
 
 Path to ete3 toolkit `taxa.sqlite` database file.
@@ -165,6 +166,17 @@ This command by default saves `~/.etetoolkit/` but _can_ be moved elsewhere if y
 The resulting file sizes are ~550MB
 
 > We may offer this an automatic construction of this in the future
+
+### --entrez_api_key
+
+Specify your NCBI entrez API key. This is required to allow efficient searching
+of NCBI sequence accession IDs for their corresponding taxonomy IDs.
+
+See for more details: https://ncbiinsights.ncbi.nlm.nih.gov/2017/11/02/new
+
+###  --entrez_email
+
+Specify the email address associated with your API key.
 
 ## Job resources
 

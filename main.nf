@@ -67,11 +67,9 @@ def helpMessage() {
       --damageprofiler_length       Specify length filter for DamageProfiler. Default: ${params.damageprofiler_length}
       --damageprofiler_threshold    Specify number of bases to consider for damageProfiler (e.g. on damage plot). Default: ${params.damageprofiler_threshold}
       --damageprofiler_yaxis        Specify the maximum misincorporation frequency that should be displayed on damage plot. Set to 0 to 'autoscale'. Default: ${params.damageprofiler_yaxis} 
+      --run_pydamage                Turn on pydamage module for damage model fitting calculations.
       --pydamage_windowlength       Specify length of read to perform model fitting
-      --pydamage_minreads           Specify minimum number of reads required for calculation
-      --pydamage_coverage           Specify minimum coverage required for calculation
       --pydamage_plots              Specify whether to produce pydamage plot images
-      --pydamage_alignments         Specify whether to produce pydamage alignment representations
 
     Other options:
       --outdir [file]                 The output directory where the results will be saved
@@ -537,6 +535,9 @@ process target_taxonomy_collapsing {
 process target_bam_splitting {
   label 'mc_small'
   tag "${bam}"
+  publishDir "${params.outdir}/per_taxa_bams", 
+    mode: params.publish_dir_mode, 
+    pattern: 'results/*.bam'
 
   input:
   tuple path(bam), path(taxids) from ch_bam_for_damageauthentication
@@ -550,14 +551,6 @@ process target_bam_splitting {
   """
   samtools index ${bam}
   mkdir results/
-  
-  if [[ -z assigned_rank_noname.txt ]]; then
-    rm assigned_rank_noname.txt
-  fi
-  
-  if [[ -z too_high_or_unknown.txt ]]; then
-    rm too_high_or_unknown.txt
-  fi
   
   for i in *.txt; do
     taxonname=\$(echo "\$i" | rev | cut -d '.' -f 2-999999999 | rev)
@@ -576,10 +569,10 @@ process target_damageprofiler {
   path(bam) from ch_bam_for_damageprofiler.flatten()
 
   output:
-  file "*.txt"
-  file "*.log"
-  file "*.pdf"
-  file "*json" into ch_damageprofiler_for_multiqc
+  file "${bam.baseName}/*.txt"
+  file "${bam.baseName}/*.log"
+  file "${bam.baseName}/*.pdf"
+  file "${bam.baseName}/*json" into ch_damageprofiler_for_multiqc
 
   script:
   samplename = bam.baseName
@@ -594,7 +587,7 @@ process target_pydamage {
   tag "${bam}"
   publishDir "${params.outdir}/pydamage/", 
     mode: params.publish_dir_mode
-
+  
   when:
   params.run_pydamage
 
@@ -608,11 +601,10 @@ process target_pydamage {
 
   script:
   samplename = bam.baseName
-  def alignments = params.pydamage_alignments ? "-s" : ""
   def plots = params.pydamage_plots ? "-pl" : ""
   """
   samtools index ${bam}
-  pydamage -o ${samplename} -w ${params.pydamage_windowlength} -m ${params.pydamage_minreads} -c ${params.pydamage_coverage} ${plots} ${alignments} -p ${task.cpus} ${bam}
+  pydamage -o ${samplename} -w ${params.pydamage_windowlength} -g ${plots} -p ${task.cpus} ${bam}
   
   if [[ -e  ${samplename}/pydamage_results.csv ]]; then
     ## make new sample column

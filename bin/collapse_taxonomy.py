@@ -12,12 +12,10 @@ Requires ete3 python taxonomy database in ~/.etetoolkit/taxa.sqlite is already
 installed and updated!
 """
 
-## TODO
-## Add input BAM exists verification
-
 #### Libraries #################################################################
 
 import os
+import sys
 import pysam
 import ete3
 import entrezpy
@@ -25,6 +23,7 @@ import argparse
 import textwrap
 import time
 import datetime
+import logging
 
 ## import specific functions/objects
 from tqdm import tqdm, trange
@@ -144,13 +143,6 @@ parser.add_argument(
     help="Output directory to place output files.",
 )
 parser.add_argument(
-    "-m",
-    "--verbose",
-    default=False,
-    help="Give verbose warning messages.",
-    action="store_true",
-)
-parser.add_argument(
     "-d",
     "--etetaxdb",
     help="Alternative location of ete3 toolkit taxonomy database if other than default of ~/.etetoolkit/taxa.sqlite"
@@ -205,9 +197,18 @@ queries_flattened = {}
 queries_valid = {}
 result_list = {}
 
+logging.basicConfig(filename='{}_collapse_taxonomy.log'.format(args.input[0]), level=logging.NOTSET)
+
 #### START #####################################################################
 
 ## Load BAM/SAM
+if not os.path.exists(args.input[0]):
+    logging.info("[collapse_taxonomy.py] critical: File {} does not exist!".format(args.input[0]))
+    print("[collapse_taxonomy.py] critical error: File {} does not exist!".format(args.input[0]))
+    sys.exit(1)
+
+
+
 filetype = args.input[0].split(".")[-1]
 samfile = pysam.AlignmentFile(args.input[0])
 
@@ -217,8 +218,7 @@ refs = unique(list(samfile.references))
 for ref in refs:
     query_dict[ref.split('|')[0].split('.')[0]]=ref
 
-if args.verbose:
-    print("[collapse_taxonomy.py] info: Detected", len(refs) , "reference sequences")
+logging.info("[collapse_taxonomy.py] info: Detected {} reference sequences".format(len(refs)))
 
 ## Clean up refs and combine to single list
 refs = [i.split('|')[0] for i in refs] 
@@ -229,8 +229,7 @@ search_queries = map(comma_join, chunked_res)
 
 #### Entrez search #############################################################
 
-if args.verbose:
-    print("[collapse_taxonomy.py] info: Generated", len(chunked_res), "entrez search queries")
+logging.info("[collapse_taxonomy.py] info: Generated {} entrez search queries".format(len(chunked_res)))
 
 n = 1
 
@@ -245,8 +244,7 @@ for i in tqdm(search_queries, desc="[collapse_taxonomy.py] info: submitting entr
 ## Flatten and clear
 search_results_flat = [y for x in search_results for y in x]
 
-if args.verbose:
-    print("[collapse_taxonomy.py] info: Received", len(list(search_results_flat)), "entrez search query results")
+logging.info("[collapse_taxonomy.py] info: Received {} entrez search query results".format(len(list(search_results_flat))))
 
 queries_flattened = list(map(extract_taxids_from_efetch, search_results_flat))
 
@@ -268,14 +266,11 @@ for query in query_dict:
     rank = ncbi.get_rank([query_dict[query]['taxid']])
     
     if len(rank) == 0:
-        if args.verbose:
-            print("[collapse_taxonomy.py] warn: no taxonomic rank found for:", query)
-        query_dict[query] = {'ref': query_dict[query], 'taxid': queries_valid.get(query, {}), 'rank': "none", 'rank_level': -1}
+        logging.warning("[collapse_taxonomy.py] warn: no taxonomic rank found for: {}".format(query))
     else:
         tax_level = list(rank.values())[0]
         rank_level = ranks_order.index(tax_level)
-        if args.verbose:
-            print("[collapse_taxonomy.py] info: taxonomic rank for", query, "is", tax_level)
+        logging.info("[collapse_taxonomy.py] info: taxonomic rank for {} is {}".format(query, tax_level))
         query_dict[query] = {'ref': query_dict[query]['ref'], 'taxid': queries_valid.get(query, {}), 'rank': rank.values(), 'rank_level': rank_level}
 
 ## Evaluate whether query can be collapsed up to the request taxonomic level
@@ -286,10 +281,8 @@ for query in query_dict:
     taxid = query_dict[query]['taxid']
     rank_level = query_dict[query]['rank_level']
 
-    if rank_level <= min_rank:
-        if args.verbose:
-            print("[collapse_taxonomy.py] warn: taxonomic level too high or unknown for:", query)
-        query_dict[query]['collapsed_rank'] = "too_high_or_unknown"
+    if rank_level < min_rank:
+        logging.warning("[collapse_taxonomy.py] warn: taxonomic level too high or unknown for: {}".format(query))
         continue
 
     else:
@@ -297,14 +290,11 @@ for query in query_dict:
         lineage = ncbi.get_rank(ncbi.get_lineage(taxid))
         
         if args.taxonomic_level not in lineage.values():
-            if args.verbose:
-                print("[collapse_taxonomy.py] warn: requested rank does not exist for:", query)
-            query_dict[query]['collapsed_rank'] = "assigned_rank_noname"
+            logging.warning("[collapse_taxonomy.py] warn: requested rank does not exist for: {}".format(query))
             continue
         else:
             ## Look up the requested taxonomic level in lineage, and find corresponding name from taxid
-            if args.verbose:
-                print("[collapse_taxonomy.py] info: requested rank has been found for:", query)
+            logging.info("[collapse_taxonomy.py] info: requested rank has been found for: {}".format(query))
             tax_limit_pos = list(lineage.values()).index(args.taxonomic_level)
             result_taxid = list(lineage)[tax_limit_pos]
             result_name = str(list(ncbi.get_taxid_translator([result_taxid]).values())[0])
@@ -328,8 +318,7 @@ for i in query_dict:
         result_list[taxon_name] = list()
         result_list[taxon_name].append(ref_name)
 
-if args.verbose:
-    print("[collapse_taxonomy.py] info: saving output files for", len(result_list), "taxonomic levels")
+    logging.info("[collapse_taxonomy.py] info: saving output files for {} taxonomic levels".format(len(result_list)))
 
 
 for key in result_list:
