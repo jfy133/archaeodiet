@@ -1,0 +1,24 @@
+strict digraph {
+    
+    graph[]
+    node []
+    
+    download_ref [shape=box]
+    prep_reads [shape = box]
+    
+    download_ref -> conterminator -> kmer_sig -> dashing_clustering -> pick_representative
+    
+    pick_representative -> read_ref_kmer_comparison
+
+    prep_reads -> read_kmer_profile_dash -> read_ref_kmer_comparison -> genomes_selection
+    
+    prep_reads -> map_reads -> remove_possible_microbial -> merge_bams
+    
+    genomes_selection -> index_genomes -> map_reads
+    
+    merge_bams -> sam2lca
+    
+    
+    sam2lca -> damage_profiler_or_pydamage
+    sam2lca -> phylogenetic_uncertainty
+}
