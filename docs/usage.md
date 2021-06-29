@@ -1,51 +1,8 @@
 # nf-core/archaeodiet: Usage
 
-<<<<<<< HEAD
-## Table of contents
-
-- [nf-core/archaeodiet: Usage](#nf-corearchaeodiet-usage)
-  - [Table of contents](#table-of-contents)
-  - [Introduction](#introduction)
-  - [Running the pipeline](#running-the-pipeline)
-    - [Updating the pipeline](#updating-the-pipeline)
-    - [Reproducibility](#reproducibility)
-  - [Main arguments](#main-arguments)
-    - [`-profile`](#-profile)
-    - [`--input`](#--input)
-    - [--target_db](#--target_db)
-    - [--contaminant_db](#--contaminant_db)
-    - [--ete3toolkit_db: this is provided by ete3](#--ete3toolkit_db-this-is-provided-by-ete3)
-    - [--entrez_api_key](#--entrez_api_key)
-    - [--entrez_email](#--entrez_email)
-  - [Job resources](#job-resources)
-    - [Automatic resubmission](#automatic-resubmission)
-    - [Custom resource requests](#custom-resource-requests)
-  - [AWS Batch specific parameters](#aws-batch-specific-parameters)
-    - [`--awsqueue`](#--awsqueue)
-    - [`--awsregion`](#--awsregion)
-    - [`--awscli`](#--awscli)
-  - [Other command line parameters](#other-command-line-parameters)
-    - [`--outdir`](#--outdir)
-    - [`--publish_dir_mode`](#--publish_dir_mode)
-    - [`--email`](#--email)
-    - [`--email_on_fail`](#--email_on_fail)
-    - [`--max_multiqc_email_size`](#--max_multiqc_email_size)
-    - [`-name`](#-name)
-    - [`-resume`](#-resume)
-    - [`-c`](#-c)
-    - [`--custom_config_version`](#--custom_config_version)
-    - [`--custom_config_base`](#--custom_config_base)
-    - [`--max_memory`](#--max_memory)
-    - [`--max_time`](#--max_time)
-    - [`--max_cpus`](#--max_cpus)
-    - [`--plaintext_email`](#--plaintext_email)
-    - [`--monochrome_logs`](#--monochrome_logs)
-    - [`--multiqc_config`](#--multiqc_config)
-=======
 ## :warning: Please read this documentation on the nf-core website: [https://nf-co.re/archaeodiet/usage](https://nf-co.re/archaeodiet/usage)
 
 > _Documentation of pipeline parameters is generated automatically from the pipeline schema and can no longer be found in markdown files._
->>>>>>> TEMPLATE
 
 ## Introduction
 
@@ -165,19 +122,7 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
     * A profile with a complete configuration for automated testing
     * Includes links to test data so needs no other parameters
 
-<<<<<<< HEAD
-<!-- TODO nf-core: Document required command line parameters -->
-
-### `--input`
-
-Use this to specify the location of your input FastQ files. For example:
-
-```bash
---input 'path/to/data/sample_*_{1,2}.fastq'
-```
-=======
 ### `-resume`
->>>>>>> TEMPLATE
 
 Specify this when restarting a pipeline. Nextflow will used cached results from any pipeline steps where the inputs are the same, continuing from where it got to previously.
 
@@ -185,54 +130,6 @@ You can also supply a run name to resume a specific run: `-resume [run-name]`. U
 
 ### `-c`
 
-<<<<<<< HEAD
-### --target_db
-
-Path to target metagenomic screening reference (e.g. eukaryotic dietary species).
-
-This would be a pre-built MALT database containing taxa that you _want_ to
-ideally find (e.g. eukaryotes)
-
-### --contaminant_db
-
-Path to contaminants to screen against (e.g. microbial database).
-
-This would be a pre-built MALT database containing taxa that could be act
-as possible contaminants (e.g. bacteria)
-
-### --ete3toolkit_db: this is provided by ete3
-
-Path to ete3 toolkit `taxa.sqlite` database file.
-
-Can be generated after [installing etetoolkit](http://etetoolkit.org/download/) and then running the following command:
-
-```bash
-ete3 ncbiquery --create
-```
-
-This command by default saves `~/.etetoolkit/` but _can_ be moved elsewhere if you have space limits in `$HOME`.
-
-The resulting file sizes are ~550MB
-
-> We may offer this an automatic construction of this in the future
-
-### --entrez_api_key
-
-Specify your NCBI entrez API key. This is required to allow efficient searching
-of NCBI sequence accession IDs for their corresponding taxonomy IDs.
-
-See for more details: https://ncbiinsights.ncbi.nlm.nih.gov/2017/11/02/new
-
-###  --entrez_email
-
-Specify the email address associated with your API key.
-
-## Job resources
-
-### Automatic resubmission
-
-Each step in the pipeline has a default set of requirements for number of CPUs, memory and time. For most of the steps in the pipeline, if the job exits with an error code of `143` (exceeded requested resources) it will automatically resubmit with higher requests (2 x original, then 3 x original). If it still fails after three times then the pipeline is stopped.
-=======
 Specify the path to a specific config file (this is a core Nextflow command). See the [nf-core website documentation](https://nf-co.re/usage/configuration) for more information.
 
 ## Custom configuration
@@ -283,7 +180,6 @@ process {
 ```
 
 > **NB:** We specify just the process name i.e. `STAR_ALIGN` in the config file and not the full task name string that is printed to screen in the error message or on the terminal whilst the pipeline is running i.e. `RNASEQ:ALIGN_STAR:STAR_ALIGN`. You may get a warning suggesting that the process selector isn't recognised but you can ignore that if the process name has been specified correctly. This is something that needs to be fixed upstream in core Nextflow.
->>>>>>> TEMPLATE
 
 ### Tool-specific options
 

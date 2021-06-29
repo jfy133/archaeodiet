@@ -2,7 +2,7 @@
     "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://raw.githubusercontent.com/nf-core/archaeodiet/master/nextflow_schema.json",
     "title": "nf-core/archaeodiet pipeline parameters",
-    "description": "Pipeline for metagenomic identification of dietary DNA from archaeological samples",
+    "description": "bioinformatics best-practice analysis pipeline for metagenomic identification of eukaryotic dietary DNA from archaeological samples.",
     "type": "object",
     "definitions": {
         "input_output_options": {

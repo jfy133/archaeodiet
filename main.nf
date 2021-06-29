@@ -11,9 +11,6 @@
 
 nextflow.enable.dsl = 2
 
-//log.info("workflow params")
-//log.info("${params}")
-
 /*
 ========================================================================================
     GENOME PARAMETER VALUES
