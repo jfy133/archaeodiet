@@ -4,6 +4,11 @@
 ========================================================================================
 */
 
+def valid_params = [
+    bt2_alignmode   : ['local', 'end-to-end'],
+    bt2_sensitivity : ['no-preset', 'very-fast', 'fast', 'sensitive', 'very-sensitive']
+]
+
 def summary_params = NfcoreSchema.paramsSummaryMap(workflow, params)
 
 // Validate input parameters
@@ -11,11 +16,20 @@ WorkflowArchaeodiet.initialise(params, log)
 
 // TODO nf-core: Add all file path parameters for the pipeline to the list below
 // Check input path parameters to see if they exist
-def checkPathParamList = [ params.input, params.multiqc_config, params.fasta ]
+def checkPathParamList = [
+    params.input, params.multiqc_config,
+    params.references, params.db_kraken, params.db_ete
+]
 for (param in checkPathParamList) { if (param) { file(param, checkIfExists: true) } }
 
+// Stage dummy file to be used as an optional input where required
+ch_dummy_file = file("$projectDir/assets/dummy_file.txt", checkIfExists: true)
+
 // Check mandatory parameters
-if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet not specified!' }
+if (params.input) { ch_input = file(params.input) } else { exit 1, '[archaeodiet] ERROR: Input samplesheet not specified!' }
+if (params.input) { ch_input = file(params.references) } else { exit 1, '[archaeodiet] ERROR: Reference directory not specified!' }
+if (params.input) { ch_input = file(params.db_kraken) } else { exit 1, '[archaeodiet] ERROR: Kraken2 database not specified!' }
+// if (params.input) { ch_input = file(params.db_ete) } else { exit 1, '[archaeodiet] ERROR: ETE toolkit database not specified!' }
 
 /*
 ========================================================================================
@@ -57,8 +71,24 @@ multiqc_options.args += params.multiqc_title ? Utils.joinModuleArgs(["--title \"
 //
 // MODULE: Installed directly from nf-core/modules
 //
-include { FASTQC  } from '../modules/nf-core/software/fastqc/main'  addParams( options: modules['fastqc'] )
+include { BOWTIE2_BUILD } from '../modules/nf-core/software/bowtie2/build/main' addParams( options: bowtie2_build_options   )
+include { BOWTIE2_ALIGN } from '../modules/nf-core/software/bowtie2/align/main' addParams( options: bowtie2_align_options   )
+include { KRAKEN2_RUN } from '../modules/nf-core/software/kraken/run/main' addParams( options: kraken2_run_options   )
+include { SAMTOOLS_MERGE } from '../modules/nf-core/software/samtools/merge/main' addParams( options: samtools_merge_options   )
+include { DAMAGEPROFILER } from '../modules/nf-core/software/damageprofiler/main' addParams( options: damageprofiler_options )
+
 include { MULTIQC } from '../modules/nf-core/software/multiqc/main' addParams( options: multiqc_options   )
+
+
+/*
+========================================================================================
+    PREP CHANNELS
+========================================================================================
+*/
+
+Channel.value(file( "${params.references}/*.fna.gz" )).set { ch_references }
+Channel.value(file( "${params.db_kraken}" )).set { ch_db_kraken }
+// ch_db_ete = Channel.value(file( "${params.db_ete}" ))
 
 /*
 ========================================================================================
@@ -73,20 +103,37 @@ workflow ARCHAEODIET {
 
     ch_software_versions = Channel.empty()
 
-    //
-    // SUBWORKFLOW: Read in samplesheet, validate and stage input files
-    //
+
+    SUBWORKFLOW: Read in samplesheet, validate and stage input files
+
     INPUT_CHECK (
         ch_input
     )
 
+    BOWTIE2_INDEXING (
+        ch_references
+    )
+    ch_software_versions = ch_software_versions.mix(BOWTIE2_INDEXING.out.bowtie2_version.first().ifEmpty(null))
+
+    // ISSUE NEED TO USE .combine OPERATOR TO GET PAIRWISE COMBS OF READS WITH REFERENCES
+    // HOW TO SUPPLY TO BT2_MAPPING?
+
+    // BOWTIE2_MAPPING (
+    //     INPUTCHECK.out, ch_references
+    // )
+
+    // KRAKEN_CLEANING (
+
+    // )
+
+
     //
     // MODULE: Run FastQC
     //
-    FASTQC (
-        INPUT_CHECK.out.reads
-    )
-    ch_software_versions = ch_software_versions.mix(FASTQC.out.version.first().ifEmpty(null))
+    // FASTQC (
+    //     INPUT_CHECK.out.reads
+    // )
+    // ch_software_versions = ch_software_versions.mix(FASTQC.out.version.first().ifEmpty(null))
 
     //
     // MODULE: Pipeline reporting

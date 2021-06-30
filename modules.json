@@ -1,0 +1,27 @@
+{
+    "name": "nf-core/archaeodiet",
+    "homePage": "https://github.com/nf-core/archaeodiet",
+    "modules": {
+        "multiqc": {
+            "git_sha": "95e02f913fa0917fafae00e96e631d5b25a965f3"
+        },
+        "fastqc": {
+            "git_sha": "95e02f913fa0917fafae00e96e631d5b25a965f3"
+        },
+        "bowtie2/align": {
+            "git_sha": "0bbd7acfc499133728a6cd2dd07a6931ac556629"
+        },
+        "bowtie2/build": {
+            "git_sha": "95e02f913fa0917fafae00e96e631d5b25a965f3"
+        },
+        "kraken2/run": {
+            "git_sha": "95e02f913fa0917fafae00e96e631d5b25a965f3"
+        },
+        "damageprofiler": {
+            "git_sha": "394273f173d6f5662bf4370c2dfa2a2af73b48a6"
+        },
+        "samtools/merge": {
+            "git_sha": "25f88dee3c2fc233a530dd96c687ba7c9d0a9bbf"
+        }
+    }
+}
