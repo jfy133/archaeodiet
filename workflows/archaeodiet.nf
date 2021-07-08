@@ -27,9 +27,9 @@ ch_dummy_file = file("$projectDir/assets/dummy_file.txt", checkIfExists: true)
 
 // Check mandatory parameters
 if (params.input) { ch_input = file(params.input) } else { exit 1, '[archaeodiet] ERROR: Input samplesheet not specified!' }
-if (params.input) { ch_input = file(params.references) } else { exit 1, '[archaeodiet] ERROR: Reference directory not specified!' }
-if (params.input) { ch_input = file(params.db_kraken) } else { exit 1, '[archaeodiet] ERROR: Kraken2 database not specified!' }
-// if (params.input) { ch_input = file(params.db_ete) } else { exit 1, '[archaeodiet] ERROR: ETE toolkit database not specified!' }
+if (params.references) { ch_references = file(params.references) } else { exit 1, '[archaeodiet] ERROR: Reference directory not specified!' }
+//if (params.input) { ch_input = file(params.db_kraken) } else { exit 1, '[archaeodiet] ERROR: Kraken2 database not specified!' }
+//if (params.input) { ch_input = file(params.db_ete) } else { exit 1, '[archaeodiet] ERROR: ETE toolkit database not specified!' }
 
 /*
 ========================================================================================
@@ -48,6 +48,8 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 
 // Don't overwrite global params.modules, create a copy instead and use that within the main script.
 def modules = params.modules.clone()
+
+// TODO JAFY MODIFY ALL MODULE ARGS/OPTIONS HERE: https://youtu.be/ggGGhTMgyHI?t=1542
 
 //
 // MODULE: Local to the pipeline
@@ -71,13 +73,13 @@ multiqc_options.args += params.multiqc_title ? Utils.joinModuleArgs(["--title \"
 //
 // MODULE: Installed directly from nf-core/modules
 //
-include { BOWTIE2_BUILD } from '../modules/nf-core/software/bowtie2/build/main' addParams( options: bowtie2_build_options   )
-include { BOWTIE2_ALIGN } from '../modules/nf-core/software/bowtie2/align/main' addParams( options: bowtie2_align_options   )
-include { KRAKEN2_RUN } from '../modules/nf-core/software/kraken/run/main' addParams( options: kraken2_run_options   )
-include { SAMTOOLS_MERGE } from '../modules/nf-core/software/samtools/merge/main' addParams( options: samtools_merge_options   )
-include { DAMAGEPROFILER } from '../modules/nf-core/software/damageprofiler/main' addParams( options: damageprofiler_options )
+include { BOWTIE2_BUILD } from '../modules/nf-core/modules/bowtie2/build/main'
+include { BOWTIE2_ALIGN } from '../modules/nf-core/modules/bowtie2/align/main'
+include { KRAKEN2_KRAKEN2 } from '../modules/nf-core/modules/kraken2/kraken2/main'
+include { SAMTOOLS_MERGE } from '../modules/nf-core/modules/samtools/merge/main'
+include { DAMAGEPROFILER } from '../modules/nf-core/modules/damageprofiler/main'
 
-include { MULTIQC } from '../modules/nf-core/software/multiqc/main' addParams( options: multiqc_options   )
+include { MULTIQC } from '../modules/nf-core/modules/multiqc/main' addParams( options: multiqc_options   )
 
 
 /*
@@ -86,7 +88,7 @@ include { MULTIQC } from '../modules/nf-core/software/multiqc/main' addParams( o
 ========================================================================================
 */
 
-Channel.value(file( "${params.references}/*.fna.gz" )).set { ch_references }
+Channel.value(file( "${params.references}/*.fasta.gz" )).flatten().dump(tag: "Ref. pickup").set { ch_references }
 Channel.value(file( "${params.db_kraken}" )).set { ch_db_kraken }
 // ch_db_ete = Channel.value(file( "${params.db_ete}" ))
 
@@ -103,24 +105,28 @@ workflow ARCHAEODIET {
 
     ch_software_versions = Channel.empty()
 
-
-    SUBWORKFLOW: Read in samplesheet, validate and stage input files
+    //
+    //SUBWORKFLOW: Read in samplesheet, validate and stage input files
+    //
 
     INPUT_CHECK (
         ch_input
-    )
+    ).dump()
 
-    BOWTIE2_INDEXING (
+    BOWTIE2_BUILD (
         ch_references
     )
-    ch_software_versions = ch_software_versions.mix(BOWTIE2_INDEXING.out.bowtie2_version.first().ifEmpty(null))
 
-    // ISSUE NEED TO USE .combine OPERATOR TO GET PAIRWISE COMBS OF READS WITH REFERENCES
-    // HOW TO SUPPLY TO BT2_MAPPING?
+    // TODO ISSUE NEED TO USE .combine OPERATOR TO GET PAIRWISE COMBS OF READS WITH REFERENCES
+    // HOW TO SUPPLY TO BT2_MAPPING? .cross()
 
-    // BOWTIE2_MAPPING (
-    //     INPUTCHECK.out, ch_references
-    // )
+    // TODO Does not align because I _think_ bt2 is auto detects paired or single-end reads,
+    // and takes it from auto metadata propogation in check_samplesheet.py. Need to back and
+    // re-add fastq_2 stuff to check_samplesheet.py AND sample sheet itself
+    BOWTIE2_ALIGN (
+        INPUT_CHECK.out,
+        ch_references
+    )
 
     // KRAKEN_CLEANING (
 
@@ -138,6 +144,10 @@ workflow ARCHAEODIET {
     //
     // MODULE: Pipeline reporting
     //
+    ch_software_versions = ch_software_versions.mix(BOWTIE2_BUILD.out.version.first().ifEmpty(null),
+                                                    BOWTIE2_ALIGN.out.version.first().ifEmpty(null)
+                                                    )
+
     ch_software_versions
         .map { it -> if (it) [ it.baseName, it ] }
         .groupTuple()
@@ -161,7 +171,7 @@ workflow ARCHAEODIET {
     ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_custom_config.collect().ifEmpty([]))
     ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
     ch_multiqc_files = ch_multiqc_files.mix(GET_SOFTWARE_VERSIONS.out.yaml.collect())
-    ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
+    //ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
 
     MULTIQC (
         ch_multiqc_files.collect()

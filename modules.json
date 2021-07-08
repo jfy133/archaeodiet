@@ -1,27 +1,27 @@
 {
     "name": "nf-core/archaeodiet",
     "homePage": "https://github.com/nf-core/archaeodiet",
-    "modules": {
-        "multiqc": {
-            "git_sha": "95e02f913fa0917fafae00e96e631d5b25a965f3"
-        },
-        "fastqc": {
-            "git_sha": "95e02f913fa0917fafae00e96e631d5b25a965f3"
-        },
-        "bowtie2/align": {
-            "git_sha": "0bbd7acfc499133728a6cd2dd07a6931ac556629"
-        },
-        "bowtie2/build": {
-            "git_sha": "95e02f913fa0917fafae00e96e631d5b25a965f3"
-        },
-        "kraken2/run": {
-            "git_sha": "95e02f913fa0917fafae00e96e631d5b25a965f3"
-        },
-        "damageprofiler": {
-            "git_sha": "394273f173d6f5662bf4370c2dfa2a2af73b48a6"
-        },
-        "samtools/merge": {
-            "git_sha": "25f88dee3c2fc233a530dd96c687ba7c9d0a9bbf"
+    "repos": {
+        "nf-core/software": {},
+        "nf-core/modules": {
+            "kraken2/kraken2": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+            },
+            "bowtie2/align": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+            },
+            "bowtie2/build": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+            },
+            "damageprofiler": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+            },
+            "samtools/merge": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+            },
+            "multiqc": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+            }
         }
     }
 }
