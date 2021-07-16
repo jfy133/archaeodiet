@@ -55,6 +55,7 @@ def modules = params.modules.clone()
 // MODULE: Local to the pipeline
 //
 include { GET_SOFTWARE_VERSIONS } from '../modules/local/get_software_versions' addParams( options: [publish_files : ['tsv':'']] )
+include { BOWTIE2_MAP } from '../modules/local/bowtie2/map'
 
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
@@ -74,7 +75,6 @@ multiqc_options.args += params.multiqc_title ? Utils.joinModuleArgs(["--title \"
 // MODULE: Installed directly from nf-core/modules
 //
 include { BOWTIE2_BUILD } from '../modules/nf-core/modules/bowtie2/build/main'
-include { BOWTIE2_ALIGN } from '../modules/nf-core/modules/bowtie2/align/main'
 include { KRAKEN2_KRAKEN2 } from '../modules/nf-core/modules/kraken2/kraken2/main'
 include { SAMTOOLS_MERGE } from '../modules/nf-core/modules/samtools/merge/main'
 include { DAMAGEPROFILER } from '../modules/nf-core/modules/damageprofiler/main'
@@ -111,21 +111,36 @@ workflow ARCHAEODIET {
 
     INPUT_CHECK (
         ch_input
-    ).dump()
+    )
 
     BOWTIE2_BUILD (
         ch_references
     )
 
+    // Convert reference channel to id + file
+    BOWTIE2_BUILD.out.index
+        .dump(tag: "output indices")
+        .map{
+            def reference = it
+            def new_file = reference + '/*.bt2'
+            def ind_path = file(new_file)[1].getBaseName()
+            def id = ind_path.split("\\.")[0]
+
+            [id, [reference]]
+        }
+        .dump(tag: "output indices")
+        .set { ch_indexed_refs }
+
+
+    INPUT_CHECK.out.reads.dump(tag: "inputcheck").cross(ch_indexed_refs).set{ ch_mapping_input }
+
     // TODO ISSUE NEED TO USE .combine OPERATOR TO GET PAIRWISE COMBS OF READS WITH REFERENCES
     // HOW TO SUPPLY TO BT2_MAPPING? .cross()
-
     // TODO Does not align because I _think_ bt2 is auto detects paired or single-end reads,
-    // and takes it from auto metadata propogation in check_samplesheet.py. Need to back and
-    // re-add fastq_2 stuff to check_samplesheet.py AND sample sheet itself
-    BOWTIE2_ALIGN (
-        INPUT_CHECK.out,
-        ch_references
+    // and takes it from auto metadata propagation in check_samplesheet.py. Need to back and
+    // zre-add fastq_2 stuff to check_samplesheet.py AND sample sheet itself
+    BOWTIE2_MAP (
+        ch_mapping_input
     )
 
     // KRAKEN_CLEANING (
@@ -145,7 +160,7 @@ workflow ARCHAEODIET {
     // MODULE: Pipeline reporting
     //
     ch_software_versions = ch_software_versions.mix(BOWTIE2_BUILD.out.version.first().ifEmpty(null),
-                                                    BOWTIE2_ALIGN.out.version.first().ifEmpty(null)
+                                                    BOWTIE2_MAP.out.version.first().ifEmpty(null)
                                                     )
 
     ch_software_versions
