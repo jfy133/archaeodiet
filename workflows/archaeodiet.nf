@@ -119,28 +119,44 @@ workflow ARCHAEODIET {
 
     // Convert reference channel to id + file
     BOWTIE2_BUILD.out.index
-        .dump(tag: "output indices")
         .map{
+            def meta_ref = [:]
             def reference = it
             def new_file = reference + '/*.bt2'
             def ind_path = file(new_file)[1].getBaseName()
-            def id = ind_path.split("\\.")[0]
+            meta_ref.id = ind_path.split("\\.")[0]
 
-            [id, [reference]]
+            [meta_ref, [reference]]
         }
-        .dump(tag: "output indices")
         .set { ch_indexed_refs }
 
+    // Generate pairwise combination all reads and refs
+    INPUT_CHECK.out.reads
+        .combine(ch_indexed_refs)
+        .set{ ch_mapping_input }
 
-    INPUT_CHECK.out.reads.dump(tag: "inputcheck").cross(ch_indexed_refs).set{ ch_mapping_input }
-
-    // TODO ISSUE NEED TO USE .combine OPERATOR TO GET PAIRWISE COMBS OF READS WITH REFERENCES
-    // HOW TO SUPPLY TO BT2_MAPPING? .cross()
-    // TODO Does not align because I _think_ bt2 is auto detects paired or single-end reads,
-    // and takes it from auto metadata propagation in check_samplesheet.py. Need to back and
-    // zre-add fastq_2 stuff to check_samplesheet.py AND sample sheet itself
+    // TODO allow specification of mapping params
     BOWTIE2_MAP (
         ch_mapping_input
+    )
+
+    // Combine for merging
+    BOWTIE2_MAP.out.bam
+        .groupTuple()
+        .map {
+            def meta = [:]
+            meta.id = it[0]
+            bams = it[1]
+
+            array = [ meta, bams ]
+
+            return array
+        }
+        .dump(tag: "bammerge")
+        .set{ch_bam_for_merge}
+
+    SAMTOOLS_MERGE (
+        ch_bam_for_merge
     )
 
     // KRAKEN_CLEANING (
@@ -160,7 +176,7 @@ workflow ARCHAEODIET {
     // MODULE: Pipeline reporting
     //
     ch_software_versions = ch_software_versions.mix(BOWTIE2_BUILD.out.version.first().ifEmpty(null),
-                                                    BOWTIE2_MAP.out.version.first().ifEmpty(null)
+                                                    //BOWTIE2_MAP.out.version.first().ifEmpty(null)
                                                     )
 
     ch_software_versions
