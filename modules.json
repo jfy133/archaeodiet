@@ -17,10 +17,19 @@
                 "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
             },
             "samtools/merge": {
-                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+                "git_sha": "adfb8a3d6541f363aec83df16df873cbb767b388"
             },
             "multiqc": {
                 "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+            },
+            "samtools/fastq": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+            },
+            "untar": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+            },
+            "picard/filtersamreads": {
+                "git_sha": "553f51d6bfdb376079d8ff913ee75ea809e081a3"
             }
         }
     }

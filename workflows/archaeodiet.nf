@@ -28,7 +28,7 @@ ch_dummy_file = file("$projectDir/assets/dummy_file.txt", checkIfExists: true)
 // Check mandatory parameters
 if (params.input) { ch_input = file(params.input) } else { exit 1, '[archaeodiet] ERROR: Input samplesheet not specified!' }
 if (params.references) { ch_references = file(params.references) } else { exit 1, '[archaeodiet] ERROR: Reference directory not specified!' }
-//if (params.input) { ch_input = file(params.db_kraken) } else { exit 1, '[archaeodiet] ERROR: Kraken2 database not specified!' }
+if (params.db_kraken) { ch_db_kraken = file(params.db_kraken) } else { exit 1, '[archaeodiet] ERROR: Kraken2 database not specified!' }
 //if (params.input) { ch_input = file(params.db_ete) } else { exit 1, '[archaeodiet] ERROR: ETE toolkit database not specified!' }
 
 /*
@@ -56,6 +56,9 @@ def modules = params.modules.clone()
 //
 include { GET_SOFTWARE_VERSIONS } from '../modules/local/get_software_versions' addParams( options: [publish_files : ['tsv':'']] )
 include { BOWTIE2_MAP } from '../modules/local/bowtie2/map'
+include { EXTRACTID } from '../modules/local/extractid'
+include { EXTRACTBAMHEADER } from '../modules/local/extractbamheader'
+
 
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
@@ -75,8 +78,11 @@ multiqc_options.args += params.multiqc_title ? Utils.joinModuleArgs(["--title \"
 // MODULE: Installed directly from nf-core/modules
 //
 include { BOWTIE2_BUILD } from '../modules/nf-core/modules/bowtie2/build/main'
-include { KRAKEN2_KRAKEN2 } from '../modules/nf-core/modules/kraken2/kraken2/main'
 include { SAMTOOLS_MERGE } from '../modules/nf-core/modules/samtools/merge/main'
+include { SAMTOOLS_FASTQ } from '../modules/nf-core/modules/samtools/fastq/main'
+include { UNTAR }  from '../modules/nf-core/modules/untar/main'
+include { KRAKEN2_KRAKEN2 } from '../modules/nf-core/modules/kraken2/kraken2/main'
+include { PICARD_FILTERSAMREADS } from '../modules/nf-core/modules/picard/filtersamreads/main'  addParams( options: [suffix : '.filtered'  ]   )
 include { DAMAGEPROFILER } from '../modules/nf-core/modules/damageprofiler/main'
 
 include { MULTIQC } from '../modules/nf-core/modules/multiqc/main' addParams( options: multiqc_options   )
@@ -88,8 +94,7 @@ include { MULTIQC } from '../modules/nf-core/modules/multiqc/main' addParams( op
 ========================================================================================
 */
 
-Channel.value(file( "${params.references}/*.fasta.gz" )).flatten().dump(tag: "Ref. pickup").set { ch_references }
-Channel.value(file( "${params.db_kraken}" )).set { ch_db_kraken }
+Channel.value(file( "${params.references}/*.fasta.gz" )).flatten().set { ch_references }
 // ch_db_ete = Channel.value(file( "${params.db_ete}" ))
 
 /*
@@ -146,32 +151,59 @@ workflow ARCHAEODIET {
         .map {
             def meta = [:]
             meta.id = it[0]
+            meta.single_end = true
             bams = it[1]
 
             array = [ meta, bams ]
 
             return array
         }
-        .dump(tag: "bammerge")
         .set{ch_bam_for_merge}
 
     SAMTOOLS_MERGE (
         ch_bam_for_merge
     )
 
-    // KRAKEN_CLEANING (
+    SAMTOOLS_FASTQ (
+        SAMTOOLS_MERGE.out.bam
+    )
 
-    // )
+    // TODO subworkflow to allow either tar/gzipped OR uncompressed folder
+    UNTAR (
+        ch_db_kraken
+    )
+
+    KRAKEN2_KRAKEN2 (
+        SAMTOOLS_FASTQ.out.fastq, UNTAR.out.untar
+    )
+
+    EXTRACTID (
+        KRAKEN2_KRAKEN2.out.unclassified
+    )
+
+    SAMTOOLS_MERGE.out.bam
+        .combine(EXTRACTID.out.readlist, by: 0)
+        .set { ch_input_for_filtersamreads }
+
+    PICARD_FILTERSAMREADS (
+        ch_input_for_filtersamreads, 'excludeReadList'
+    )
+
+    EXTRACTBAMHEADER (
+        PICARD_FILTERSAMREADS.out.bam
+    )
 
 
+    SAMTOOLS_MERGE.out.bam
+        .combine( EXTRACTBAMHEADER.out.reflist, by: 0)
+        .dump(tag: "input_for_damageprofiling")
+        .set { ch_input_for_damageprofiling }
+
+    //DAMAGEPROFILER (
     //
-    // MODULE: Run FastQC
-    //
-    // FASTQC (
-    //     INPUT_CHECK.out.reads
-    // )
-    // ch_software_versions = ch_software_versions.mix(FASTQC.out.version.first().ifEmpty(null))
+    //)
 
+    // TODO
     //
     // MODULE: Pipeline reporting
     //

@@ -4,7 +4,7 @@ include { initOptions; saveFiles; getSoftwareName } from './functions'
 params.options = [:]
 options        = initOptions(params.options)
 
-process SAMTOOLS_MERGE {
+process SAMTOOLS_FASTQ {
     tag "$meta.id"
     label 'process_low'
     publishDir "${params.outdir}",
@@ -19,17 +19,23 @@ process SAMTOOLS_MERGE {
     }
 
     input:
-    tuple val(meta), path(bams)
+    tuple val(meta), path(bam)
 
     output:
-    tuple val(meta), path("${prefix}.bam"), emit: bam
-    path  "*.version.txt"                 , emit: version
+    tuple val(meta), path("*.fastq.gz"), emit: fastq
+    path  "*.version.txt"         , emit: version
 
     script:
     def software = getSoftwareName(task.process)
-    prefix   = options.suffix ? "${meta.id}${options.suffix}" : "${meta.id}"
+    def prefix   = options.suffix ? "${meta.id}${options.suffix}" : "${meta.id}"
+    def endedness = meta.single_end ? "-0 ${prefix}.fastq.gz" : "-1 ${prefix}_1.fastq.gz -2 ${prefix}_2.fastq.gz"
+
     """
-    samtools merge ${prefix}.bam $bams
+    samtools fastq \\
+        $options.args \\
+        -@ $task.cpus \\
+        $endedness \\
+        $bam
     echo \$(samtools --version 2>&1) | sed 's/^.*samtools //; s/Using.*\$//' > ${software}.version.txt
     """
 }
