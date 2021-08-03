@@ -193,7 +193,6 @@ workflow ARCHAEODIET {
         PICARD_FILTERSAMREADS.out.bam
     )
 
-
     SAMTOOLS_MERGE.out.bam
         .combine( EXTRACTBAMHEADER.out.reflist, by: 0)
         .dump(tag: "input_for_damageprofiling")

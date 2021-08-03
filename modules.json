@@ -2,11 +2,12 @@
     "name": "nf-core/archaeodiet",
     "homePage": "https://github.com/nf-core/archaeodiet",
     "repos": {
-        "nf-core/software": {},
-        "nf-core/modules": {
-            "kraken2/kraken2": {
+        "jfy133/modules": {
+            "damageprofiler": {
                 "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
-            },
+            }
+        },
+        "nf-core/modules": {
             "bowtie2/align": {
                 "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
             },
@@ -16,20 +17,38 @@
             "damageprofiler": {
                 "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
             },
-            "samtools/merge": {
-                "git_sha": "adfb8a3d6541f363aec83df16df873cbb767b388"
+            "kraken2/kraken2": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
             },
             "multiqc": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+            },
+            "picard/filtersamreads": {
+                "git_sha": "3cc43838e1e05f650845e7f668a18714d5b63efe"
+            },
+            "samtools/faidx": {
                 "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
             },
             "samtools/fastq": {
                 "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
             },
-            "untar": {
+            "samtools/flagstat": {
                 "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
             },
-            "picard/filtersamreads": {
-                "git_sha": "553f51d6bfdb376079d8ff913ee75ea809e081a3"
+            "samtools/index": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+            },
+            "samtools/merge": {
+                "git_sha": "adfb8a3d6541f363aec83df16df873cbb767b388"
+            },
+            "samtools/stats": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+            },
+            "snpeff": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+            },
+            "untar": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
             }
         }
     }
