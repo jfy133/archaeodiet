@@ -51,11 +51,51 @@ def modules = params.modules.clone()
 
 // TODO JAFY MODIFY ALL MODULE ARGS/OPTIONS HERE: https://youtu.be/ggGGhTMgyHI?t=1542
 
+// Load defaults from config
+def bowtie2_map_options = modules['bowtie2']
+
+// Modify defaults
+bowtie2_map_options.args += params.bt2_n != 0 ? "-N ${params.bt2_n} " : ""
+
+if ( "${params.bt2_alignmode}" == "end-to-end"  ) {
+    switch ( "${params.bt2_sensitivity}" ) {
+        case "no-preset":
+        sensitivity = ""; break
+        case "very-fast":
+        sensitivity = "--very-fast"; break
+        case "fast":
+        sensitivity = "--fast"; break
+        case "sensitive":
+        sensitivity = "--sensitive"; break
+        case "very-sensitive":
+        sensitivity = "--very-sensitive"; break
+        default:
+        sensitivity = ""; break
+        }
+} else if ("${params.bt2_alignmode}" == "local") {
+    switch ( "${params.bt2_sensitivity}" ) {
+        case "no-preset":
+        sensitivity = ""; break
+        case "very-fast":
+        sensitivity = "--very-fast-local"; break
+        case "fast":
+        sensitivity = "--fast-local"; break
+        case "sensitive":
+        sensitivity = "--sensitive-local"; break
+        case "very-sensitive":
+        sensitivity = "--very-sensitive-local"; break
+        default:
+        sensitivity = ""; break
+        }
+}
+
+bowtie2_map_options.args += sensitivity
+
 //
 // MODULE: Local to the pipeline
 //
 include { GET_SOFTWARE_VERSIONS } from '../modules/local/get_software_versions' addParams( options: [publish_files : ['tsv':'']] )
-include { BOWTIE2_MAP } from '../modules/local/bowtie2/map'
+include { BOWTIE2_MAP } from '../modules/local/bowtie2/map' addParams( options: bowtie2_map_options )
 include { EXTRACTID } from '../modules/local/extractid'
 include { EXTRACTBAMHEADER } from '../modules/local/extractbamheader'
 
@@ -73,6 +113,9 @@ include { INPUT_CHECK } from '../subworkflows/local/input_check' addParams( opti
 
 def multiqc_options   = modules['multiqc']
 multiqc_options.args += params.multiqc_title ? Utils.joinModuleArgs(["--title \"$params.multiqc_title\""]) : ''
+
+// TODO JAFY MODIFY ALL MODULE ARGS/OPTIONS HERE: https://youtu.be/ggGGhTMgyHI?t=1542
+
 
 //
 // MODULE: Installed directly from nf-core/modules
@@ -192,7 +235,6 @@ workflow ARCHAEODIET {
     EXTRACTBAMHEADER (
         PICARD_FILTERSAMREADS.out.bam
     )
-
 
     SAMTOOLS_MERGE.out.bam
         .combine( EXTRACTBAMHEADER.out.reflist, by: 0)
