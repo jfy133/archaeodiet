@@ -106,6 +106,7 @@ include { EXTRACTBAMHEADER } from '../modules/local/extractbamheader'
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
 include { INPUT_CHECK } from '../subworkflows/local/input_check' addParams( options: [:] )
+include { BAM_SORT_SAMTOOLS } from '../subworkflows/local/bam_sort_samtools' addParams( options: [:] )  addParams( options: [suffix : '.sorted'  ]   )
 
 /*
 ========================================================================================
@@ -118,15 +119,17 @@ multiqc_options.args += params.multiqc_title ? Utils.joinModuleArgs(["--title \"
 
 // TODO JAFY MODIFY ALL MODULE ARGS/OPTIONS HERE
 def kraken2_options = modules['kraken2']
+
 kraken2_options.args += params.kraken2_confidence != 0.0 ? "--confidence ${params.kraken2_confidence}" : ""
 kraken2_options.args += params.kraken2_min_base_qual != 0 ? "--minimum_base_quality ${params.kraken2_minimum_min_base_qual}" : ""
-kraken2_options.args += params.kraken2_memory_mapping "--memory-mapping" ? ""
+kraken2_options.args += params.kraken2_memory_mapping ? "--memory-mapping" : ""
 kraken2_options.args += params.kraken2_min_hit_groups != 2 ? "--minimum-hit-groups ${params.kraken2_min_hit_groups}" : ""
 
 //
 // MODULE: Installed directly from nf-core/modules
 //
 include { BOWTIE2_BUILD } from '../modules/nf-core/modules/bowtie2/build/main'
+include { SAMTOOLS_FLAGSTAT } from '../modules/nf-core/modules/samtools/flagstat/main'
 include { SAMTOOLS_MERGE } from '../modules/nf-core/modules/samtools/merge/main'
 include { SAMTOOLS_FASTQ } from '../modules/nf-core/modules/samtools/fastq/main'
 include { UNTAR }  from '../modules/nf-core/modules/untar/main'
@@ -135,7 +138,6 @@ include { PICARD_FILTERSAMREADS } from '../modules/nf-core/modules/picard/filter
 include { DAMAGEPROFILER } from '../modules/nf-core/modules/damageprofiler/main'
 
 include { MULTIQC } from '../modules/nf-core/modules/multiqc/main' addParams( options: multiqc_options   )
-
 
 /*
 ========================================================================================
@@ -187,29 +189,50 @@ workflow ARCHAEODIET {
     // Generate pairwise combination all reads and refs
     INPUT_CHECK.out.reads
         .combine(ch_indexed_refs)
+        .dump(tag: "input_check_combine")
         .set{ ch_mapping_input }
 
-    // TODO allow specification of mapping params
     BOWTIE2_MAP (
         ch_mapping_input
     )
 
+    // TODO FIX HERE
+    BOWTIE2_MAP.out.bam
+        .dump(tag: "bt2_out")
+        .map {
+
+            def meta = [:]
+            def meta_reads = it[0]
+            def meta_ref = it[1]
+            def bam = it[2]
+
+            meta.id = meta_reads.id
+            meta.ref = meta_ref.id
+            meta.longname = "${meta.id}-${meta.ref}"
+
+            [ meta, bam ]
+        }
+        .set { ch_bt2_for_flagstat }
+
+    BAM_SORT_SAMTOOLS (
+        ch_bt2_for_flagstat.dump(tag: "input to stats")
+    )
+
     // Combine for merging
     BOWTIE2_MAP.out.bam
-        .groupTuple()
         .map {
             def meta = [:]
-            meta.id = it[0]
+            meta.id = it[0].id
             meta.single_end = true
-            bams = it[1]
+            bams = it[2]
 
             array = [ meta, bams ]
 
             return array
         }
+        .groupTuple()
+        .dump(tag: "input_to_merge")
         .set{ch_bam_for_merge}
-
-
 
     SAMTOOLS_MERGE (
         ch_bam_for_merge
@@ -247,7 +270,6 @@ workflow ARCHAEODIET {
 
     SAMTOOLS_MERGE.out.bam
         .combine( EXTRACTBAMHEADER.out.reflist, by: 0)
-        .dump(tag: "input_for_damageprofiling")
         .set { ch_input_for_damageprofiling }
 
     //DAMAGEPROFILER (
@@ -291,7 +313,8 @@ workflow ARCHAEODIET {
     ch_multiqc_files = ch_multiqc_files.mix(ch_multiqc_custom_config.collect().ifEmpty([]))
     ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
     ch_multiqc_files = ch_multiqc_files.mix(GET_SOFTWARE_VERSIONS.out.yaml.collect())
-    //ch_multiqc_files = ch_multiqc_files.mix(FASTQC.out.zip.collect{it[1]}.ifEmpty([]))
+    ch_multiqc_files = ch_multiqc_files.mix(BOWTIE2_MAP.out.log.collect{it[1]}.ifEmpty([]))
+    ch_multiqc_files = ch_multiqc_files.mix(BAM_SORT_SAMTOOLS.out.idxstats.dump(tag: "idxstats").collect{it[1]}.ifEmpty([]))
 
     MULTIQC (
         ch_multiqc_files.collect()

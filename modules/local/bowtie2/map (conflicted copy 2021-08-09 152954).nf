@@ -22,18 +22,14 @@ process BOWTIE2_MAP {
     tuple val(meta_reads), path(reads), val(meta_ref), path(reference)
 
     output:
-    tuple val(meta_reads), path("*.bam"), emit: bam
-    tuple val(meta_reads), path('*.log'), emit: log
+    tuple val(meta_reads), val(meta_ref), path("*.bam"), emit: bam
+    tuple val(meta_reads), val(meta_ref), path('*.log'), emit: log
     path "*.version.txt"          , emit: version
 
     script:
     def split_cpus = Math.floor(task.cpus/2)
     def software = getSoftwareName(task.process)
     def prefix   = "${meta_reads.id}-${meta_ref.id}"
-
-    meta_reads.reference = "${meta_ref.id}"
-    meta_reads.longname = "${meta_reads.id}-${meta_ref.id}"
-
 
     """
     INDEX=`find -L ./ -name "*.rev.1.bt2" | sed 's/.rev.1.bt2//'`
