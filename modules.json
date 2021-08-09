@@ -24,6 +24,9 @@
             "samtools/fastq": {
                 "git_sha": "c5235a983d454787fa0c3247b02086969217163b"
             },
+            "samtools/flagstat": {
+                "git_sha": "c5235a983d454787fa0c3247b02086969217163b"
+            },
             "samtools/idxstats": {
                 "git_sha": "c5235a983d454787fa0c3247b02086969217163b"
             },

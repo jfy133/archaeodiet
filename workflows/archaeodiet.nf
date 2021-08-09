@@ -49,13 +49,15 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 // Don't overwrite global params.modules, create a copy instead and use that within the main script.
 def modules = params.modules.clone()
 
-// TODO JAFY MODIFY ALL MODULE ARGS/OPTIONS HERE: https://youtu.be/ggGGhTMgyHI?t=1542
+// TODO JAFY MODIFY ALL MODULE ARGS/OPTIONS HERE
 
 // Load defaults from config
 def bowtie2_map_options = modules['bowtie2']
 
 // Modify defaults
 bowtie2_map_options.args += params.bt2_n != 0 ? "-N ${params.bt2_n} " : ""
+bowtie2_map_options.args += params.bt2_l != 0 ? "-L ${params.bt2_L} " : ""
+
 
 if ( "${params.bt2_alignmode}" == "end-to-end"  ) {
     switch ( "${params.bt2_sensitivity}" ) {
@@ -114,8 +116,12 @@ include { INPUT_CHECK } from '../subworkflows/local/input_check' addParams( opti
 def multiqc_options   = modules['multiqc']
 multiqc_options.args += params.multiqc_title ? Utils.joinModuleArgs(["--title \"$params.multiqc_title\""]) : ''
 
-// TODO JAFY MODIFY ALL MODULE ARGS/OPTIONS HERE: https://youtu.be/ggGGhTMgyHI?t=1542
-
+// TODO JAFY MODIFY ALL MODULE ARGS/OPTIONS HERE
+def kraken2_options = modules['kraken2']
+kraken2_options.args += params.kraken2_confidence != 0.0 ? "--confidence ${params.kraken2_confidence}" : ""
+kraken2_options.args += params.kraken2_min_base_qual != 0 ? "--minimum_base_quality ${params.kraken2_minimum_min_base_qual}" : ""
+kraken2_options.args += params.kraken2_memory_mapping "--memory-mapping" ? ""
+kraken2_options.args += params.kraken2_min_hit_groups != 2 ? "--minimum-hit-groups ${params.kraken2_min_hit_groups}" : ""
 
 //
 // MODULE: Installed directly from nf-core/modules
