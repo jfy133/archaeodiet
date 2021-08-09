@@ -203,6 +203,8 @@ workflow ARCHAEODIET {
         }
         .set{ch_bam_for_merge}
 
+
+
     SAMTOOLS_MERGE (
         ch_bam_for_merge
     )
