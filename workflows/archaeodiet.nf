@@ -234,6 +234,7 @@ workflow ARCHAEODIET {
         ch_input_for_filtersamreads, 'excludeReadList'
     )
 
+    // TODO replace with bamAlignerHeader
     EXTRACTBAMHEADER (
         PICARD_FILTERSAMREADS.out.bam
     )
@@ -252,7 +253,13 @@ workflow ARCHAEODIET {
     // MODULE: Pipeline reporting
     //
     ch_software_versions = ch_software_versions.mix(BOWTIE2_BUILD.out.version.first().ifEmpty(null),
-                                                    //BOWTIE2_MAP.out.version.first().ifEmpty(null)
+                                                    BOWTIE2_MAP.out.version.first().ifEmpty(null),
+                                                    SAMTOOLS_MERGE.out.version.first().ifEmpty(null),
+                                                    SAMTOOLS_FASTQ.out.version.first().ifEmpty(null),
+                                                    UNTAR.out.version.first().ifEmpty(null),
+                                                    KRAKEN2_KRAKEN2.out.version.first().ifEmpty(null),
+                                                    EXTRACTID.out.version.first().ifEmpty(null),
+                                                    PICARD_FILTERSAMREADS.out.version.first().ifEmpty(null),
                                                     )
 
     ch_software_versions

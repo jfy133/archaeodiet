@@ -32,6 +32,6 @@ process EXTRACTID {
     """
     sed -n 's/^@\\([^ ]*\\)/\1/p' <(gzip -dc ${fastq}) > ${prefix}.readlist.txt
 
-    echo \$(sed --version 2>&1) | sed 's/^sed (GNU sed)//; s/Packaged.*//' > ${software}.version.txt
+    echo \$(sed --version 2>&1) | sed 's/^sed (GNU sed)//; s/Packaged.*//' > sed.version.txt
     """
 }
