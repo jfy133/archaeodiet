@@ -1,11 +1,12 @@
 #!/usr/bin/env nextflow
 /*
 ========================================================================================
-                         nf-core/archaeodiet
+                         archaeodiet
 ========================================================================================
- nf-core/archaeodiet Analysis Pipeline.
+ archaeodiet Analysis Pipeline.
+ Pipeline built based on the nf-core iniative 
  #### Homepage / Documentation
- https://github.com/nf-core/archaeodiet
+ https://github.com/jfy133/archaeodiet
 ----------------------------------------------------------------------------------------
 */
 
@@ -18,7 +19,7 @@ def helpMessage() {
 
     The typical command for running the pipeline is as follows:
 
-    nextflow run nf-core/archaeodiet --reads '*_R{1,2}.fastq.gz' -profile docker
+    nextflow run jfy133/archaeodiet --reads '*_R{1,2}.fastq.gz' -profile docker
 
     Mandatory arguments:
       --input [file]                Path to preprocessed FASTQ files (must be surrounded with quotes)
@@ -100,82 +101,82 @@ if (params.help) {
  */
 
 if (params.target_db == '' ) {
-    exit 1, "[nf-core/archaeodiet] error: target database alignment requires a path to a database directory. Please specify one with --target_db '/path/to/database/'."
+    exit 1, "[archaeodiet] error: target database alignment requires a path to a database directory. Please specify one with --target_db '/path/to/database/'."
 }
 
 if (params.contaminant_db == '' ) {
-    exit 1, "[nf-core/archaeodiet] error: contaminant database alignment requires a path to a database directory. Please specify one with --contaminant_db '/path/to/database/'."
+    exit 1, "[archaeodiet] error: contaminant database alignment requires a path to a database directory. Please specify one with --contaminant_db '/path/to/database/'."
 }
 
 // Input validation
 def valid_tax_levels = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species']
 if ( !params.target_taxonomic_level in valid_tax_levels) {
-    exit 1, "[nf-core/archaeodiet] error: invalid taxonomic level specificed. Options: ${valid_tax_levels}. You gave: --target_taxonomic_level '${target_taxonomic_level}'."
+    exit 1, "[archaeodiet] error: invalid taxonomic level specificed. Options: ${valid_tax_levels}. You gave: --target_taxonomic_level '${target_taxonomic_level}'."
 }
 
   if (params.target_tool != 'malt') {
-    exit 1, "[nf-core/archaeodiet] error: metagenomic classification against target database can currently only be run with 'malt'. Please check your classifer. You gave: --target_tool '${params.target_tool}'."
+    exit 1, "[archaeodiet] error: metagenomic classification against target database can currently only be run with 'malt'. Please check your classifer. You gave: --target_tool '${params.target_tool}'."
   }
 
   if (params.target_tool == 'malt' && params.target_malt_mode != 'BlastN' && params.target_malt_mode != 'BlastP' && params.target_malt_mode != 'BlastX') {
-    exit 1, "[nf-core/archaeodiet] error: unknown MALT mode specified. Options: 'BlastN', 'BlastP', 'BlastX'. You gave: --target_malt_mode '${params.target_malt_mode}'."
+    exit 1, "[archaeodiet] error: unknown MALT mode specified. Options: 'BlastN', 'BlastP', 'BlastX'. You gave: --target_malt_mode '${params.target_malt_mode}'."
   }
 
   if (params.target_tool == 'malt' && params.target_malt_alignment_mode != 'Local' && params.target_malt_alignment_mode != 'SemiGlobal') {
-    exit 1, "[nf-core/archaeodiet] error: unknown MALT alignment mode specified. Options: 'Local', 'SemiGlobal'. You gave: --target_malt_alignment_mode '${params.target_malt_alignment_mode}'."
+    exit 1, "[archaeodiet] error: unknown MALT alignment mode specified. Options: 'Local', 'SemiGlobal'. You gave: --target_malt_alignment_mode '${params.target_malt_alignment_mode}'."
   }
 
   if (params.target_tool == 'malt' && params.target_malt_min_support_mode == 'percent' && params.target_min_support_reads != 1) {
-    exit 1, "[nf-core/archaeodiet] error: incompatible MALT min support configuration. Percent can only be used with --target_malt_min_support_percent. You modified --target_min_support_reads."
+    exit 1, "[archaeodiet] error: incompatible MALT min support configuration. Percent can only be used with --target_malt_min_support_percent. You modified --target_min_support_reads."
   }
 
   if (params.target_tool == 'malt' && params.target_malt_min_support_mode == 'reads' && params.target_malt_min_support_percent != 0.01) {
-    exit 1, "[nf-core/archaeodiet] error: incompatible MALT min support configuration. Reads can only be used with --target_target_malt_min_supportreads. You modified --target_malt_min_support_percent."
+    exit 1, "[archaeodiet] error: incompatible MALT min support configuration. Reads can only be used with --target_target_malt_min_supportreads. You modified --target_malt_min_support_percent."
   }
 
   if (params.target_tool == 'malt' && params.target_malt_memory_mode != 'load' && params.target_malt_memory_mode != 'page' && params.target_malt_memory_mode != 'map') {
-    exit 1, "[nf-core/archaeodiet] error: unknown MALT memory mode specified. Options: 'load', 'page', 'map'. You gave: --target_malt_memory_mode '${params.target_malt_memory_mode}'."
+    exit 1, "[archaeodiet] error: unknown MALT memory mode specified. Options: 'load', 'page', 'map'. You gave: --target_malt_memory_mode '${params.target_malt_memory_mode}'."
   }
 
   if (!params.target_min_support_reads.toString().isInteger()){
-    exit 1, "[nf-core/archaeodiet] error: incompatible min_support_reads configuration. min_support_reads can only be used with integers. --target_min_support_reads You gave: ${params.target_min_support_reads}."
+    exit 1, "[archaeodiet] error: incompatible min_support_reads configuration. min_support_reads can only be used with integers. --target_min_support_reads You gave: ${params.target_min_support_reads}."
   }
 
     if (params.contaminant_tool != 'malt') {
-    exit 1, "[nf-core/archaeodiet] error: metagenomic classification against contaminant database can currently only be run with 'malt'. Please check your classifer. You gave: --target_tool '${params.target_tool}'."
+    exit 1, "[archaeodiet] error: metagenomic classification against contaminant database can currently only be run with 'malt'. Please check your classifer. You gave: --target_tool '${params.target_tool}'."
   }
 
   if (params.contaminant_tool == 'malt' && params.contaminant_malt_mode != 'BlastN' && params.contaminant_malt_mode != 'BlastP' && params.contaminant_malt_mode != 'BlastX') {
-    exit 1, "[nf-core/archaeodiet] error: unknown MALT mode specified. Options: 'BlastN', 'BlastP', 'BlastX'. You gave: --contaminant_malt_mode '${params.contaminant_malt_mode}'."
+    exit 1, "[archaeodiet] error: unknown MALT mode specified. Options: 'BlastN', 'BlastP', 'BlastX'. You gave: --contaminant_malt_mode '${params.contaminant_malt_mode}'."
   }
 
   if (params.contaminant_tool == 'malt' && params.contaminant_malt_alignment_mode != 'Local' && params.contaminant_malt_alignment_mode != 'SemiGlobal') {
-    exit 1, "[nf-core/archaeodiet] error: unknown MALT alignment mode specified. Options: 'Local', 'SemiGlobal'. You gave: --contaminant_malt_alignment_mode '${params.contaminant_malt_alignment_mode}'."
+    exit 1, "[archaeodiet] error: unknown MALT alignment mode specified. Options: 'Local', 'SemiGlobal'. You gave: --contaminant_malt_alignment_mode '${params.contaminant_malt_alignment_mode}'."
   }
 
   if (params.contaminant_tool == 'malt' && params.contaminant_malt_min_support_mode == 'percent' && params.contaminant_min_support_reads != 1) {
-    exit 1, "[nf-core/archaeodiet] error: incompatible MALT min support configuration. Percent can only be used with --contaminant_malt_min_support_percent. You modified --contaminant_min_support_reads."
+    exit 1, "[archaeodiet] error: incompatible MALT min support configuration. Percent can only be used with --contaminant_malt_min_support_percent. You modified --contaminant_min_support_reads."
   }
 
   if (params.contaminant_tool == 'malt' && params.contaminant_malt_min_support_mode == 'reads' && params.contaminant_malt_min_support_percent != 0.01) {
-    exit 1, "[nf-core/archaeodiet] error: incompatible MALT min support configuration. Reads can only be used with --contaminant_contaminant_malt_min_supportreads. You modified --contaminant_malt_min_support_percent."
+    exit 1, "[archaeodiet] error: incompatible MALT min support configuration. Reads can only be used with --contaminant_contaminant_malt_min_supportreads. You modified --contaminant_malt_min_support_percent."
   }
 
   if (params.contaminant_tool == 'malt' && params.contaminant_malt_memory_mode != 'load' && params.contaminant_malt_memory_mode != 'page' && params.contaminant_malt_memory_mode != 'map') {
-    exit 1, "[nf-core/archaeodiet] error: unknown MALT memory mode specified. Options: 'load', 'page', 'map'. You gave: --contaminant_malt_memory_mode '${params.contaminant_malt_memory_mode}'."
+    exit 1, "[archaeodiet] error: unknown MALT memory mode specified. Options: 'load', 'page', 'map'. You gave: --contaminant_malt_memory_mode '${params.contaminant_malt_memory_mode}'."
   }
 
   if (!params.contaminant_min_support_reads.toString().isInteger()){
-    exit 1, "[nf-core/archaeodiet] error: incompatible min_support_reads configuration. min_support_reads can only be used with integers. --target_min_support_reads You gave: ${params.target_min_support_reads}."
+    exit 1, "[archaeodiet] error: incompatible min_support_reads configuration. min_support_reads can only be used with integers. --target_min_support_reads You gave: ${params.target_min_support_reads}."
   }
 
 if (params.entrez_api_key == ''){
-    exit 1, "[nf-core/archaeodiet] error: Entrez API key is required due to NCBI rules. See documentation on how to obtain. Please supply with: --entrez_api_key."
+    exit 1, "[archaeodiet] error: Entrez API key is required due to NCBI rules. See documentation on how to obtain. Please supply with: --entrez_api_key."
 
 }
 
 if (params.entrez_api_email == ''){
-    exit 1, "[nf-core/archaeodiet] error: email address used with Entrez API key is required due to NCBI rules. Please supply with: --entrez_api_email."
+    exit 1, "[archaeodiet] error: email address used with Entrez API key is required due to NCBI rules. Please supply with: --entrez_api_email."
 
 }
 
@@ -211,24 +212,24 @@ ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
 if (params.input) {
     Channel
         .fromPath(params.input, checkIfExists: true)
-        .ifEmpty { exit 1, "[nf-core/archaeodiet] Cannot find any reads matching: ${params.input}\nNB: Path needs to be enclosed in quotes!" }
+        .ifEmpty { exit 1, "[archaeodiet] Cannot find any reads matching: ${params.input}\nNB: Path needs to be enclosed in quotes!" }
         .set { ch_input_for_targetalignment }
 } else {
-    exit 1, "[nf-core/archaeodiet] input was not supplied. PLease check input parameters"
+    exit 1, "[archaeodiet] input was not supplied. PLease check input parameters"
 }
 
 if ( params.target_db != '' ) {
   ch_db_for_targetalignment = Channel
       .fromPath(params.target_db, checkIfExists: true, type: 'dir')
 } else {
-    exit 1, "[nf-core/archaeodiet] target database was not supplied. Please check input parameters."
+    exit 1, "[archaeodiet] target database was not supplied. Please check input parameters."
 }
 
 if ( params.contaminant_db != '' ) {
   ch_db_for_contaminantalignment = Channel
       .fromPath(params.contaminant_db, checkIfExists: true, type: 'dir')
 } else {
-    exit 1, "[nf-core/archaeodiet] contaminant database was not supplied. Please check input parameters."
+    exit 1, "[archaeodiet] contaminant database was not supplied. Please check input parameters."
 }
 
 // Load dummy header for pydamage output
@@ -274,10 +275,10 @@ Channel.from(summary.collect{ [it.key, it.value] })
     .map { k,v -> "<dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }
     .reduce { a, b -> return [a, b].join("\n            ") }
     .map { x -> """
-    id: 'nf-core-archaeodiet-summary'
+    id: 'archaeodiet-summary'
     description: " - this information is collected when the pipeline is started."
-    section_name: 'nf-core/archaeodiet Workflow Summary'
-    section_href: 'https://github.com/nf-core/archaeodiet'
+    section_name: 'archaeodiet Workflow Summary'
+    section_href: 'https://github.com/jfy133/archaeodiet'
     plot_type: 'html'
     data: |
         <dl class=\"dl-horizontal\">
@@ -675,9 +676,9 @@ process output_documentation {
 workflow.onComplete {
 
     // Set up the e-mail variables
-    def subject = "[nf-core/archaeodiet] Successful: $workflow.runName"
+    def subject = "[archaeodiet] Successful: $workflow.runName"
     if (!workflow.success) {
-        subject = "[nf-core/archaeodiet] FAILED: $workflow.runName"
+        subject = "[archaeodiet] FAILED: $workflow.runName"
     }
     def email_fields = [:]
     email_fields['version'] = workflow.manifest.version
@@ -708,12 +709,12 @@ workflow.onComplete {
         if (workflow.success) {
             mqc_report = ch_multiqc_report.getVal()
             if (mqc_report.getClass() == ArrayList) {
-                log.warn "[nf-core/archaeodiet] Found multiple reports from process 'multiqc', will use only one"
+                log.warn "[archaeodiet] Found multiple reports from process 'multiqc', will use only one"
                 mqc_report = mqc_report[0]
             }
         }
     } catch (all) {
-        log.warn "[nf-core/archaeodiet] Could not attach MultiQC report to summary email"
+        log.warn "[archaeodiet] Could not attach MultiQC report to summary email"
     }
 
     // Check if we are only sending emails on failure
@@ -745,11 +746,11 @@ workflow.onComplete {
             if (params.plaintext_email) { throw GroovyException('Send plaintext e-mail, not HTML') }
             // Try to send HTML e-mail using sendmail
             [ 'sendmail', '-t' ].execute() << sendmail_html
-            log.info "[nf-core/archaeodiet] Sent summary e-mail to $email_address (sendmail)"
+            log.info "[archaeodiet] Sent summary e-mail to $email_address (sendmail)"
         } catch (all) {
             // Catch failures and try with plaintext
             [ 'mail', '-s', subject, email_address ].execute() << email_txt
-            log.info "[nf-core/archaeodiet] Sent summary e-mail to $email_address (mail)"
+            log.info "[archaeodiet] Sent summary e-mail to $email_address (mail)"
         }
     }
 
@@ -775,10 +776,10 @@ workflow.onComplete {
     }
 
     if (workflow.success) {
-        log.info "-${c_purple}[nf-core/archaeodiet]${c_green} Pipeline completed successfully${c_reset}-"
+        log.info "-${c_purple}[archaeodiet]${c_green} Pipeline completed successfully${c_reset}-"
     } else {
         checkHostname()
-        log.info "-${c_purple}[nf-core/archaeodiet]${c_red} Pipeline completed with errors${c_reset}-"
+        log.info "-${c_purple}[archaeodiet]${c_red} Pipeline completed with errors${c_reset}-"
     }
 
 }
@@ -802,7 +803,7 @@ def nfcoreHeader() {
     ${c_blue}  |\\ | |__  __ /  ` /  \\ |__) |__         ${c_yellow}}  {${c_reset}
     ${c_blue}  | \\| |       \\__, \\__/ |  \\ |___     ${c_green}\\`-._,-`-,${c_reset}
                                             ${c_green}`._,._,\'${c_reset}
-    ${c_purple}  nf-core/archaeodiet v${workflow.manifest.version}${c_reset}
+    ${c_purple}  archaeodiet v${workflow.manifest.version}${c_reset}
     -${c_dim}--------------------------------------------------${c_reset}-
     """.stripIndent()
 }
