@@ -18,8 +18,8 @@ for version_file in version_files:
 print(
     """
 id: 'software_versions'
-section_name: 'nf-core/archaeodiet Software Versions'
-section_href: 'https://github.com/nf-core/archaeodiet'
+section_name: 'archaeodiet Software Versions'
+section_href: 'https://github.com/jfy133/archaeodiet'
 plot_type: 'html'
 description: 'are collected at run time from the software output.'
 data: |

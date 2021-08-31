@@ -1,6 +1,6 @@
 {
-    "name": "nf-core/archaeodiet",
-    "homePage": "https://github.com/nf-core/archaeodiet",
+    "name": "archaeodiet",
+    "homePage": "https://github.com/jfy133e/archaeodiet",
     "repos": {
         "nf-core/modules": {
             "bowtie2/align": {

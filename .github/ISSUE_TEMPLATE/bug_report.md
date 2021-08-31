@@ -5,7 +5,7 @@ labels: bug
 ---
 
 <!--
-# nf-core/archaeodiet bug report
+# archaeodiet bug report
 
 Hi there!
 
@@ -15,10 +15,7 @@ Please delete this text and anything that's not relevant from the template below
 
 ## Check Documentation
 
-I have checked the following places for your error:
-
-- [ ] [nf-core website: troubleshooting](https://nf-co.re/usage/troubleshooting)
-- [ ] [nf-core/archaeodiet pipeline documentation](https://nf-co.re/archaeodiet/usage)
+- [ ] I have checked the documentation under `docs`
 
 ## Description of the bug
 

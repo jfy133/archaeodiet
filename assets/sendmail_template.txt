@@ -9,12 +9,12 @@ Content-Type: text/html; charset=utf-8
 $email_html
 
 --nfcoremimeboundary
-Content-Type: image/png;name="nf-core-archaeodiet_logo.png"
+Content-Type: image/png;name="archaeodiet_logo.png"
 Content-Transfer-Encoding: base64
 Content-ID: <nfcorepipelinelogo>
-Content-Disposition: inline; filename="nf-core-archaeodiet_logo.png"
+Content-Disposition: inline; filename="archaeodiet_logo.png"
 
-<% out << new File("$projectDir/assets/nf-core-archaeodiet_logo.png").
+<% out << new File("$projectDir/assets/archaeodiet_logo.png").
     bytes.
     encodeBase64().
     toString().

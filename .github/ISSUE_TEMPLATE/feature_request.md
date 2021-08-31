@@ -1,11 +1,11 @@
 ---
 name: Feature request
-about: Suggest an idea for the nf-core/archaeodiet pipeline
+about: Suggest an idea for the archaeodiet pipeline
 labels: enhancement
 ---
 
 <!--
-# nf-core/archaeodiet feature request
+# archaeodiet feature request
 
 Hi there!
 

@@ -1,4 +1,4 @@
-# nf-core/archaeodiet: Output
+# archaeodiet: Output
 
 ## Introduction
 

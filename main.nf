@@ -1,11 +1,9 @@
 #!/usr/bin/env nextflow
 /*
 ========================================================================================
-    nf-core/archaeodiet
+    archaeodiet
 ========================================================================================
-    Github : https://github.com/nf-core/archaeodiet
-    Website: https://nf-co.re/archaeodiet
-    Slack  : https://nfcore.slack.com/channels/archaeodiet
+    Github : https://github.com/jfy133/archaeodiet
 ----------------------------------------------------------------------------------------
 */
 
@@ -28,7 +26,7 @@ WorkflowMain.initialise(workflow, params, log)
 include { ARCHAEODIET } from './workflows/archaeodiet'
 
 //
-// WORKFLOW: Run main nf-core/archaeodiet analysis pipeline
+// WORKFLOW: Run main archaeodiet analysis pipeline
 //
 workflow NFCORE_ARCHAEODIET {
     ARCHAEODIET ()
