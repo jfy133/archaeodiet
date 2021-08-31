@@ -1,0 +1,51 @@
+{
+    "name": "archaeodiet",
+    "homePage": "https://github.com/jfy133e/archaeodiet",
+    "repos": {
+        "nf-core/modules": {
+            "bowtie2/align": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+            },
+            "bowtie2/build": {
+                "git_sha": "c5235a983d454787fa0c3247b02086969217163b"
+            },
+            "damageprofiler": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+            },
+            "kraken2/kraken2": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+            },
+            "multiqc": {
+                "git_sha": "c5235a983d454787fa0c3247b02086969217163b"
+            },
+            "picard/filtersamreads": {
+                "git_sha": "c5235a983d454787fa0c3247b02086969217163b"
+            },
+            "samtools/fastq": {
+                "git_sha": "c5235a983d454787fa0c3247b02086969217163b"
+            },
+            "samtools/flagstat": {
+                "git_sha": "c5235a983d454787fa0c3247b02086969217163b"
+            },
+            "samtools/idxstats": {
+                "git_sha": "c5235a983d454787fa0c3247b02086969217163b"
+            },
+            "samtools/index": {
+                "git_sha": "c5235a983d454787fa0c3247b02086969217163b"
+            },
+            "samtools/merge": {
+                "git_sha": "c5235a983d454787fa0c3247b02086969217163b"
+            },
+            "samtools/sort": {
+                "git_sha": "c5235a983d454787fa0c3247b02086969217163b"
+            },
+            "samtools/stats": {
+                "git_sha": "c5235a983d454787fa0c3247b02086969217163b"
+            },
+            "untar": {
+                "git_sha": "e937c7950af70930d1f34bb961403d9d2aa81c7d"
+            }
+        },
+        "nf-core/software": {}
+    }
+}

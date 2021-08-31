@@ -1,7 +1,0 @@
-# id: 'pydamage'
-# namespace: 'pydamage'
-# format: 'csv'
-# plot_type: 'table'
-# table_title: 'pydamage model fitting'
-# pconfig:
-#     format: '{:,.3f}'
